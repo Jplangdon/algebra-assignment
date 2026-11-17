@@ -1,0 +1,120 @@
+\section{Run time and memory before and after}
+\label{sec:sequential}
+
+\subsection{Method}
+
+Table~\ref{tab:environments} lists the machines the measurements in this report come from.
+The sequential measurements were taken on \SequentialMachine. For each matrix size the
+assignment program was built twice from the same source, once against the original library
+and once against the cached one, and run on one core. A small launcher starts the program
+and reads its wall-clock time and its peak resident memory from the operating system when
+it exits. The identity $\det(C) = \det(A)\det(B)$ was verified by the program in every run.
+Every table and figure in this report is generated from the recorded result files by a
+script in the repository.
+
+\begin{table}[t]
+  \caption{Machines used for the measurements.}
+  \label{tab:environments}
+  \centering
+  \footnotesize
+  \input{generated/table_environments}
+\end{table}
+
+\subsection{Results}
+
+Table~\ref{tab:sequential} and Fig.~\ref{fig:runtime} give the run times. At
+$N = \SeqLargestBoth$, the largest size we ran with both libraries, the original takes
+\SeqOriginalAtLargest{} and the cached version \SeqCachedAtLargest, a factor of
+\SeqSpeedupAtLargest. The largest cached run, $N = \SeqLargestCached$, takes
+\SeqCachedAtLargestCached.
+
+\input{generated/machines}
+
+\begin{table}[t]
+  \caption{The assignment program with the original and the cached finite field on
+  \SequentialMachine. A dash marks a size that was not run. Where a size was run more than
+  once, the median is given.}
+  \label{tab:sequential}
+  \centering
+  \footnotesize
+  \input{generated/table_sequential}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/runtime.pdf}
+  \caption{Run time of the whole program against matrix dimension, on logarithmic axes.}
+  \label{fig:runtime}
+\end{figure}
+
+The gain grows with the matrix (Fig.~\ref{fig:speedup}), and
+\SeqSmallestSentence. The reason is the first use of each operand pair.
+Fig.~\ref{fig:cache} shows how the tables fill. At $N = 100$ only
+\CacheHitAtHundred\% of the additions and multiplications are answered from a table, and the
+rest still run the original arithmetic once. The share passes 99\% at
+$N = \CacheHitNinetyNineSize$.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/speedup.pdf}
+  \caption{Speedup of the cached program over the original.}
+  \label{fig:speedup}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/cache_fill.pdf}
+  \caption{Cache behaviour over one run of the program: the share of the addition and
+  multiplication table slots that end up filled, and the share of additions and
+  multiplications answered from a table.}
+  \label{fig:cache}
+\end{figure}
+
+\subsection{Memory}
+
+The original library stores every matrix entry as a vector object that points to a
+separate heap block. Measured from the growth of peak memory with $N$, that costs about
+\SeqOriginalBytesPerEntry~bytes per entry on this system. The cached entry is two bytes.
+Fig.~\ref{fig:memory} shows the effect. At $N = \SeqLargestBoth$ peak memory falls from
+\SeqOriginalMemoryAtLargest{} to \SeqCachedMemoryAtLargest. The tables are a fixed cost of
+about 7~MB. \SeqMemoryCrossoverSentence. At $N = \SeqLargestCached$ the cached program peaks
+at \SeqCachedMemoryAtLargestCached.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/memory.pdf}
+  \caption{Peak resident memory against matrix dimension, on logarithmic axes.}
+  \label{fig:memory}
+\end{figure}
+
+\subsection{Where the remaining time goes}
+
+Table~\ref{tab:phases} splits the largest run of each library into the matrix product and
+the three determinants. With the cached library the product takes \SeqCachedProductShare\%
+of the run, against \SeqOriginalProductShare\% with the original. The product accumulates each entry as a running
+sum, so every table lookup for an addition has to wait for the previous one, which is the
+chained pattern of Fig.~\ref{fig:lookup}. In the elimination the additions do not depend on
+each other and the processor overlaps them.
+
+\begin{table}[t]
+  \caption{Time in the matrix product and in the three determinants, for the largest run
+  of each library.}
+  \label{tab:phases}
+  \centering
+  \footnotesize
+  \input{generated/table_phases}
+\end{table}
+
+\subsection{Comparison with the assignment's figures}
+
+Table~\ref{tab:reference} sets our measurements beside the figures in the assignment text,
+which come from a different machine. \SeqReferenceNote
+
+\begin{table}[t]
+  \caption{The assignment's reference figures (Apple M3 Max) and our measurements on
+  \SequentialMachine.}
+  \label{tab:reference}
+  \centering
+  \footnotesize
+  \input{generated/table_reference}
+\end{table}

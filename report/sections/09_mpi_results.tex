@@ -1,0 +1,77 @@
+\section{MPI against the cached sequential program}
+\label{sec:mpiresults}
+
+\subsection{Method}
+
+The MPI measurements were taken on \MpiMachine{} (Table~\ref{tab:environments}).
+\MpiNodesSentence.
+
+We tested $N = $~\MpiSizes{} with \MpiProcessCounts{} processes and a panel width of
+$b = \MpiBlock$. The matrices are the assignment program's $A$ and $B$ for each size, built
+from the same seed. \MpiRepeatsSentence, and we report medians. The MPI time runs from the
+moment rank~0 starts handing out columns until rank~0 knows the determinant, so it includes
+distributing the matrix. The sequential time is the assignment's elimination on the same
+matrix, run by rank~0 in the same job while the other processes sleep. The two take turns
+going first from one repetition to the next. Both work on the same matrix, so whichever
+runs second finds the processor's caches warmed by the first, and for small matrices that
+decides which one looks faster. In every measurement the MPI result and the sequential
+result \MpiAllMatch.
+
+\subsection{Break-even}
+
+Table~\ref{tab:mpi} gives the times and Fig.~\ref{fig:mpispeedup} the ratio between them.
+\MpiBreakEvenSentence. \MpiWinsSentence{} The best ratio we
+measured is \MpiBestRatio{} at $N = \MpiBestRatioSize$.
+
+\begin{table}[t]
+  \caption{Median time for one determinant: the cached sequential program and the MPI
+  program with $p$ processes. Each run times both on the same matrix, and the ratio is the
+  median over the runs of sequential time divided by MPI time. Bold marks sizes at which MPI
+  is faster.}
+  \label{tab:mpi}
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \input{generated/table_mpi}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/mpi_speedup.pdf}
+  \caption{Sequential time divided by MPI time. Above the dark line at 1 MPI is faster.
+  Each point is the median of the individual runs and the shaded band holds the middle half
+  of them.}
+  \label{fig:mpispeedup}
+\end{figure}
+
+For small matrices the fixed costs dominate. At the smallest sizes the arithmetic of a
+determinant takes microseconds, less than it costs to hand the columns out and to send one
+broadcast per panel. As $N$ grows, the arithmetic grows with $N^3$ while the number of
+broadcasts grows with $N$ and their total size with $N^2$, so the messages matter less and
+less.
+
+The ratio could mix two effects, because the MPI program with a single process is not
+the same code as the sequential program. It sends nothing, but it stores the matrix by
+columns and eliminates one column at a time, where the assignment's elimination works row
+by row. \MpiOneProcessSentence{} \MpiOneProcessWidthSentence{} The gain that comes from
+the additional processes is the time with one process divided by the time with
+\MpiMostProcesses, which is \MpiParallelGain{} at the largest size.
+
+\subsection{Messages}
+
+At $N = \MpiLargestSize$ with \MpiMostProcesses{} processes the run distributes
+\MpiLargestDistributedMegabytes~MB of columns and then sends \MpiLargestPanels{} broadcasts
+that carry \MpiLargestBroadcastMegabytes~MB in total.
+
+\MpiBlockSentence{} That is the shape to expect. A panel that is wide compared with the
+matrix leaves one process preparing most of the columns while the others wait, and a width
+of one sends a broadcast for every column.
+
+\begin{table}[t]
+  \caption{Sequential time divided by MPI time for different panel widths $b$, with
+  \MpiBlockProcesses{} processes. Higher is better. Bold marks the best width for each size.}
+  \label{tab:blocks}
+  \centering
+  \footnotesize
+  \input{generated/table_blocks}
+\end{table}

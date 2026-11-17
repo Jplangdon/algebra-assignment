@@ -1,0 +1,18 @@
+grouping,category,instructions,percent
+source,polynomials,306458981,26.60
+source,groups,253636819,22.02
+source,std::vector and other library headers,183825303,15.96
+source,heap allocator (libc),168036664,14.59
+source,rings,117435132,10.19
+source,operator new and delete,82954490,7.20
+source,other,31496747,2.73
+source,finite fields,5163394,0.45
+source,assignment program,1632309,0.14
+source,matrices,1318331,0.11
+source,core,1533,0.00
+routine,polynomial reduction (divmod),306569130,26.61
+routine,polynomial multiplication,295404570,25.64
+routine,heap allocation,250491894,21.74
+routine,other,197087835,17.11
+routine,matrix loops,80770475,7.01
+routine,polynomial add and negate,21635799,1.88

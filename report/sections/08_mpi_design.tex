@@ -1,0 +1,87 @@
+\section{An MPI determinant}
+\label{sec:mpidesign}
+
+The second part of the assignment computes the determinants with MPI~\cite{mpi40} on
+several machines and compares the result with the cached sequential program.
+
+\subsection{The elimination as a PLU factorization}
+
+Gaussian elimination with row exchanges factors a matrix as
+$PA = LU$~\cite{golub2013matrix}. At step $k$ it picks a nonzero pivot in column $k$, swaps
+its row into place, divides the entries below the pivot by it to get the multipliers
+$\ell_{ik}$, and subtracts $\ell_{ik}$ times row $k$ from every row $i$ below. The
+determinant is the product of the pivots, with the sign flipped once for every row
+exchange. If a column has no nonzero entry at or below the diagonal, the determinant is
+zero. Over a finite field there is no rounding, so any nonzero entry is as good a pivot as
+any other, and we take the first one.
+
+\subsection{Distributing by columns}
+
+The assignment text asks us to watch how pivot selection and matrix updates affect network
+communication. Step $k$ needs two things: the pivot, and the multipliers below it. Both are
+in column $k$. We therefore give every process whole columns, so that the process that owns
+column $k$ can find the pivot and compute the multipliers from its own memory, without
+asking anyone. It then tells the others the pivot row and the multipliers, and each process
+updates the columns it owns: for a column $j$ it swaps the two rows, reads $x = a_{kj}$, and
+computes $a_{ij} \leftarrow a_{ij} - \ell_{ik}\,x$ for the rows below.
+
+The alternative is to distribute rows. Then the entries of column $k$ are spread over all
+processes. Finding a nonzero pivot in general takes a reduction over all of them at every
+step, and a row exchange can mean two processes trading rows. With columns, a row exchange
+is something every process does locally to its own columns once it knows the pivot row.
+
+\subsection{Panels}
+
+Sending one message per column would cost $N$ broadcasts. We group $b$ neighbouring columns
+into a panel and deal the panels out to the $p$ processes in turn, a one-dimensional form
+of the block-cyclic layout used by ScaLAPACK~\cite{blackford1997scalapack}. Dealing them in turn keeps the load even,
+because every process still owns columns near the end of the matrix. The owner of a panel
+works through its $b$ columns one at a time. For each it applies the earlier steps of the
+same panel, finds the pivot and computes the multipliers. It then broadcasts the whole
+panel at once: a flag for a zero determinant, the $b$ pivot rows and the $b$ columns of
+multipliers. Listing~\ref{lst:apply} is the routine every process runs on each of its
+remaining columns.
+
+\begin{lstlisting}[caption={Applying one panel to one column. \code{first} is the panel's
+first column.},label={lst:apply}]
+for (step = 0; step < steps; ++step) {
+  k = first + step;
+  if (pivots[step] != k)
+    swap(column[k], column[pivots[step]]);
+  x = column[k];
+  if (x.is_zero()) continue;
+  m = multipliers + step * rows;
+  for (i = k + 1; i < n; ++i)
+    column[i] = column[i].add(
+      x.multiply(m[i - first]).negate());
+}
+\end{lstlisting}
+
+The inner loop performs the same three field operations per entry as the sequential
+program: a multiplication, a negation and an addition. The steps of a panel are applied to
+a column one after another, in order, which gives the same result as the row-by-row
+elimination.
+
+\subsection{What travels over the network}
+
+Rank~0 generates the matrix and sends each process its columns once. After that the only
+messages are the panel broadcasts, $\lceil N/b \rceil$ of them. Together they carry each
+multiplier once, about $N^2/2$ field elements whatever the value of $b$, so $b$ trades the
+number of messages against their size and against the time the other processes wait while
+one process prepares a panel.
+
+The cached field matters here as well. A cached element is a plain 16-bit value, so a
+column or a panel is sent as raw bytes, two per element. An element of the original library
+owns heap memory and would have to be packed and unpacked. Every process keeps its own
+tables. Before timing, each process fills them, which took \CacheWarmSeconds~s per process
+on \MpiMachine.
+
+\subsection{Checking the MPI program}
+
+In every run rank~0 also computes the determinant with the sequential elimination on the
+same matrix, and the program exits with an error if the two results differ. A test script
+runs \MpiTestCount{} configurations, \MpiTestVerdict. They cover one to four processes,
+panel widths that do and do not divide $N$, matrices smaller than the number of processes,
+sparse matrices, permutation matrices and matrices with a zero leading column, which force
+row exchanges, and singular matrices. For $N = 100$, 200 and 400 the script also compares
+the results with the determinants printed by the original assignment program.

@@ -1,0 +1,86 @@
+% =========================================================================
+%  CSE 625 - Finite field determinants: caching and MPI
+%  IEEE report
+%
+%  Each section lives in its own file under ./sections and is pulled in with
+%  \input, as in the first assignment.
+%
+%  The tables, the figures and every measured number in the text come from
+%  ./generated and ./figures. Those are written by
+%      python3 scripts/make_report_assets.py
+%  from the files in results/. After new measurements, run that script again
+%  and recompile; do not type measured numbers into the text.
+% =========================================================================
+\documentclass[conference]{IEEEtran}
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xtab}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage[caption=false,font=small,labelfont=bf]{subfig}
+\usepackage{listings}
+
+\lstset{
+  basicstyle=\footnotesize\ttfamily,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible,
+  keepspaces=true,
+  language=C++,
+  captionpos=b
+}
+
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, filecolor=blue, urlcolor=blue}
+
+% Lets lines with long code words stretch instead of sticking out of the column.
+\emergencystretch=1.5em
+
+% Measured numbers and generated sentences.
+\input{generated/numbers}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\Fq}{\mathbb{F}_{11^3}}
+
+\title{Caching Finite Field Arithmetic and\\Distributing Determinants with MPI}
+
+\author{
+\IEEEauthorblockN{Diego Chequer}
+\IEEEauthorblockA{CSE 625 \\ University of Louisville \\ d0chequer01@louisville.edu}
+\and
+\IEEEauthorblockN{Bishoy Hana}
+\IEEEauthorblockA{CSE 625 \\ University of Louisville \\ bahana01@louisville.edu}
+\and
+\IEEEauthorblockN{Jacob Papu-Langdon}
+\IEEEauthorblockA{CSE 625 \\ University of Louisville \\ jplang01@louisville.edu}
+\and
+\IEEEauthorblockN{varshika}
+\IEEEauthorblockA{CSE 625 \\ University of Louisville \\ v0kota03@louisville.edu}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{sections/01_abstract}
+\end{abstract}
+
+\input{sections/02_introduction}
+\input{sections/03_background}
+\input{sections/04_profiling}
+\input{sections/05_cached_field}
+\input{sections/06_equivalence}
+\input{sections/07_sequential_results}
+\input{sections/08_mpi_design}
+\input{sections/09_mpi_results}
+\input{sections/10_limitations}
+\input{sections/11_conclusion}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

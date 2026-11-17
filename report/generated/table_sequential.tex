@@ -1,0 +1,15 @@
+\begin{tabular}{@{}r r r r r r@{}}
+\toprule
+& \multicolumn{3}{c}{Run time (s)} & \multicolumn{2}{c}{Peak memory (MiB)} \\
+\cmidrule(lr){2-4}\cmidrule(l){5-6}
+$N$ & Original & Cached & Speedup & Original & Cached \\
+\midrule
+100 & 0.768 & 0.653 & 1.2$\times$ & 6.1 & 10.8 \\
+200 & 6.29 & 1.05 & 6.0$\times$ & 12.6 & 10.9 \\
+400 & 50.8 & 3.14 & 16.2$\times$ & 38.2 & 11.9 \\
+800 & 407 & 19.4 & 21.0$\times$ & 140 & 15.6 \\
+1000 & 819 & 37.6 & 21.8$\times$ & 217 & 18.4 \\
+2000 & -- & 319 & -- & -- & 41.2 \\
+4000 & -- & 2\,628 & -- & -- & 133 \\
+\bottomrule
+\end{tabular}

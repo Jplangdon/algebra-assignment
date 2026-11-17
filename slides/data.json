@@ -1,0 +1,363 @@
+{
+ "machines": {
+  "sequential": "cloud-vm",
+  "mpi": "cloud-vm",
+  "sequential_description": "Intel Xeon Processor @ 2.10GHz, 2 CPUs, 7.8 GiB, Ubuntu 24.04.5 LTS (virtual machine)",
+  "mpi_description": "Intel Xeon Processor @ 2.10GHz, 2 CPUs, 7.8 GiB, Ubuntu 24.04.5 LTS (virtual machine)"
+ },
+ "profile": {
+  "categories": [
+   "heap allocation",
+   "polynomial reduction (divmod)",
+   "polynomial multiplication",
+   "matrix loops",
+   "polynomial add and negate",
+   "other"
+  ],
+  "percent": [
+   33.37,
+   31.7,
+   24.38,
+   4.81,
+   3.94,
+   1.8
+  ]
+ },
+ "lookup": {
+  "groups": [
+   "add",
+   "multiply",
+   "multiply then add (chained)"
+  ],
+  "series": [
+   {
+    "name": "Original arithmetic",
+    "values": [
+     54.7881,
+     308.449,
+     400.414
+    ]
+   },
+   {
+    "name": "std::unordered_map",
+    "values": [
+     69.5094,
+     49.6429,
+     422.5
+    ]
+   },
+   {
+    "name": "Table",
+    "values": [
+     3.7631,
+     3.73611,
+     30.8907
+    ]
+   }
+  ]
+ },
+ "sequential": {
+  "sizes": [
+   100,
+   200,
+   400,
+   800,
+   1000,
+   2000,
+   4000
+  ],
+  "original_seconds": [
+   0.768,
+   6.29,
+   50.772,
+   406.678,
+   819.157,
+   null,
+   null
+  ],
+  "cached_seconds": [
+   0.653,
+   1.05,
+   3.136,
+   19.374,
+   37.62,
+   319.1435,
+   2627.797
+  ],
+  "original_mib": [
+   6.1,
+   12.6,
+   38.2,
+   140.4,
+   217.4,
+   null,
+   null
+  ],
+  "cached_mib": [
+   10.8,
+   10.9,
+   11.9,
+   15.6,
+   18.4,
+   41.2,
+   132.8
+  ],
+  "speedup": [
+   1.1761102603369065,
+   5.9904761904761905,
+   16.190051020408163,
+   20.990915660163108,
+   21.774508240297717,
+   null,
+   null
+  ]
+ },
+ "cache": {
+  "sizes": [
+   10,
+   20,
+   30,
+   40,
+   60,
+   80,
+   100,
+   150,
+   200,
+   300,
+   400,
+   600
+  ],
+  "slots_filled": [
+   0.10781452064027149,
+   0.8709268266799732,
+   2.921350153903817,
+   6.813087440963083,
+   21.077823456262585,
+   42.87772196384996,
+   66.38258575346826,
+   97.29879467881716,
+   99.9757840684007,
+   100.0,
+   100.0,
+   100.0
+  ],
+  "answered": [
+   1.4193548387096744,
+   1.7667844522968212,
+   2.9424726897651077,
+   4.826188608128945,
+   13.004890186311668,
+   25.448303410452677,
+   40.96468371768359,
+   74.39100531989375,
+   88.90565896382569,
+   96.71415469304937,
+   98.61424280930987,
+   99.58951342240893
+  ]
+ },
+ "mpi": {
+  "block": 8,
+  "sizes": [
+   10,
+   20,
+   30,
+   40,
+   50,
+   75,
+   100,
+   150,
+   200,
+   300,
+   400,
+   600,
+   800,
+   1000,
+   1500,
+   2000
+  ],
+  "sequential_seconds": [
+   1.2495e-06,
+   8.7465e-06,
+   3.2536e-05,
+   0.000147018,
+   0.000302518,
+   0.0009326935,
+   0.001894369,
+   0.0065177640000000005,
+   0.014073396500000002,
+   0.044647785,
+   0.10000338,
+   0.33315283399999995,
+   0.758662276,
+   1.4714323015000002,
+   4.8802396895,
+   11.3707377045
+  ],
+  "series": [
+   {
+    "processes": 1,
+    "seconds": [
+     1.8299999999999998e-06,
+     9.5795e-06,
+     3.0627000000000003e-05,
+     0.000110548,
+     0.000249866,
+     0.0007933795,
+     0.0017166295,
+     0.006334759,
+     0.013127601,
+     0.041771571,
+     0.0942513425,
+     0.3021006795,
+     0.7378729804999999,
+     1.3504710979999999,
+     4.722021573499999,
+     11.282025793999999
+    ],
+    "ratio": [
+     0.6425412596250459,
+     0.9779356073763594,
+     1.0390933439144032,
+     1.119122085904334,
+     1.1683021863437604,
+     1.112271555508646,
+     1.0827369595016925,
+     1.1136988484039192,
+     1.1479263605669088,
+     1.1154753988902493,
+     1.0942187231642344,
+     1.1101371281726025,
+     1.0664269429484432,
+     1.0855290297605578,
+     1.0233592211345077,
+     1.0250734183957184
+    ]
+   },
+   {
+    "processes": 2,
+    "seconds": [
+     6.0015e-06,
+     1.65905e-05,
+     4.18725e-05,
+     0.00014028899999999998,
+     0.0002614985,
+     0.000645276,
+     0.0010153305,
+     0.0034332665,
+     0.0075292185000000005,
+     0.024023552,
+     0.053060633999999995,
+     0.15627723300000002,
+     0.418411751,
+     0.7347993260000001,
+     2.4163729524999997,
+     5.7387576785
+    ],
+    "ratio": [
+     0.32441154792248283,
+     0.6790631931607036,
+     0.8940954616239395,
+     1.3031633938067944,
+     1.2640628638160472,
+     1.5754473467432324,
+     1.7764289630704262,
+     1.770049281522403,
+     1.798110333437407,
+     1.8741246682783208,
+     1.9712130062190112,
+     2.047021155416585,
+     2.023044208533719,
+     2.1471316535973353,
+     2.0264685195117353,
+     1.992153242865652
+    ]
+   }
+  ]
+ },
+ "text": {
+  "SequentialMachine": "cloud-vm",
+  "MpiMachine": "cloud-vm",
+  "ProfileReduction": "32",
+  "ProfileHeap": "33",
+  "ProfileMultiply": "24",
+  "ProfileMatrix": "5",
+  "ProfileField": "93",
+  "LookupOriginalAdd": "55",
+  "LookupOriginalMultiply": "308",
+  "LookupOriginalChained": "400",
+  "LookupMapAdd": "70",
+  "LookupMapMultiply": "50",
+  "LookupMapChained": "423",
+  "LookupTableAdd": "3.8",
+  "LookupTableMultiply": "3.7",
+  "LookupTableChained": "31",
+  "LookupChainedTableGain": "13.0",
+  "LookupChainedMapSentence": "In the chained pattern the hash map is slower than the original arithmetic it replaces (423 ns against 400 ns)",
+  "LookupConclusionPhrase": "in the pattern of the matrix product it was slower than the original arithmetic",
+  "CacheHitNinetyNineSize": "600",
+  "CacheHitHalfSize": "150",
+  "CacheHitAtHundred": "41",
+  "CacheFillAtHundred": "66",
+  "SeqLargestBoth": "1000",
+  "SeqOriginalAtLargest": "13 min 39 s",
+  "SeqCachedAtLargest": "37.6 s",
+  "SeqSpeedupAtLargest": "21.8",
+  "SeqBestSpeedup": "21.8",
+  "SeqBestSpeedupSize": "1000",
+  "SeqSmallestSize": "100",
+  "SeqSpeedupAtSmallest": "1.2",
+  "SeqSmallestSentence": "at N = 100 the cached program is only 1.2 times faster (0.653 s against 0.768 s)",
+  "SeqOriginalMemoryAtLargest": "217 MiB",
+  "SeqCachedMemoryAtLargest": "18 MiB",
+  "SeqMemoryRatioAtLargest": "11.8",
+  "SeqMemoryCrossover": "200",
+  "SeqIdenticalSizes": "100, 200, 400, 800 and 1000",
+  "SeqIdenticalVerdict": "identical",
+  "SeqOriginalProductShare": "52",
+  "SeqOriginalBytesPerEntry": "56",
+  "SeqMemoryCrossoverSentence": "For very small matrices the cached program therefore uses more memory than the original; in our runs it uses less from N = 200 upward",
+  "SeqReferenceNote": "We did not run the original library at these sizes. If its run time keeps growing with N^3 from N = 1000, our largest run of it, the original would need about 14 h 34 min at N = 4000 on this machine. That figure is an extrapolation, not a measurement. At N = 4000 the cached program needs 43 min 48 s and 0.13 GiB here, against 20 min 16 s and 0.53 GB in the assignment text, which was measured on a different processor.",
+  "SeqRunsPhrase": "1 to 5 runs per size; the table gives the median",
+  "SeqRepeatSentence": "Where a size was run more than once, the slowest run took up to 49% longer than the fastest for runs under 10 s, and up to 7% longer for longer runs.",
+  "SeqLargestCached": "4000",
+  "SeqCachedAtLargestCached": "43 min 48 s",
+  "SeqCachedMemoryAtLargestCached": "133 MiB",
+  "SeqCachedProductShare": "87",
+  "SeqAllVerified": "true",
+  "MpiBlock": "8",
+  "MpiSizes": "10, 20, 30, 40, 50, 75, 100, 150, 200, 300, 400, 600, 800, 1000, 1500, 2000",
+  "MpiProcessCounts": "1 and 2",
+  "MpiNodes": "1",
+  "MpiAllMatch": "agreed",
+  "MpiNodesLimitation": "The break-even measurements were taken with all processes on one machine. They have to be repeated across several machines before they say anything about a network.",
+  "MpiNodesSentence": "All processes ran on one machine, so the messages passed through shared memory and not through a network. These figures therefore show the smallest overhead the algorithm can have, and a run across several machines will move the break-even point upward",
+  "MpiMostProcesses": "2",
+  "MpiBestRatio": "2.15",
+  "MpiBestRatioSize": "1000",
+  "MpiLargestSize": "2000",
+  "MpiLargestSequential": "11.4 s",
+  "MpiLargestTime": "5.7 s",
+  "MpiLargestRatio": "1.99",
+  "MpiLargestPanels": "250",
+  "MpiLargestBroadcastMegabytes": "4.0",
+  "MpiLargestDistributedMegabytes": "4.0",
+  "MpiBreakEvenSentence": "With 2 processes the smallest tested size at which MPI was faster is N=40, and it stayed faster at every larger size",
+  "MpiBreakEvenSize": "40",
+  "MpiStaysFasterSize": "40",
+  "MpiWinsSentence": "From that size on, MPI won at least 8 of the 10 individual runs at each size.",
+  "MpiParallelGain": "1.97",
+  "MpiOneProcessRatio": "1.03",
+  "MpiOneProcessSentence": "At N = 2000 the single-process run takes about as long as the sequential program, a ratio of 1.03, so the column layout by itself neither costs nor gains much.",
+  "MpiBlockProcesses": "2",
+  "CacheWarmSeconds": "0.7",
+  "MpiRepeatsSentence": "Every configuration was timed 5 times on each of the two matrices",
+  "MpiAbstractSentence": "With 2 processes on a single machine, where messages do not cross a network, the MPI program is faster than the cached sequential program from N = 40 upward.",
+  "MpiNoiseSentence": "The same sequential determinant was timed in several jobs. The medians of those jobs differ by up to 65% for determinants shorter than 0.1 s and by up to 23% for longer ones, so ratios close to 1 carry little meaning.",
+  "MpiTestCount": "222",
+  "MpiTestVerdict": "all of which pass",
+  "MpiBlockSentence": "The table repeats the measurement for other panel widths. At N = 2000 the ratio lies between 1.85 and 2.13 for all 5 widths. The choice matters most at N = 100, where b = 128 reaches 1.12 and b = 8 reaches 1.78.",
+  "MpiOneProcessWidthSentence": "With one process the ratio was lowest for b = 1 at every size where we compared widths. At N = 1000 it is 1.03 for b = 1 and 1.12 for b = 128. That fits a column staying in the processor's cache while several steps are applied to it.",
+  "MpiReferenceSentence": "At N = 2000 the assignment program needs 13.8 s for one determinant and the reference 11.4 s, so the reference used here is the faster of the two and the comparison is the stricter one for MPI."
+ }
+}

@@ -1,3 +1,17 @@
 build/
 build-*/
 .DS_Store
+
+# Programs' own output from the benchmark scripts; the CSV files in results/ are kept.
+results/logs/
+slurm-*.out
+
+# Python, Node and LaTeX leftovers.
+__pycache__/
+node_modules/
+report/*.aux
+report/*.bbl
+report/*.blg
+report/*.log
+report/*.out
+report/*.synctex.gz

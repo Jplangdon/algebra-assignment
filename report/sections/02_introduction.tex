@@ -1,0 +1,29 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Scientific software is often assembled from several repositories, each written to follow the
+definitions of a field outside computer science, and the people who rely on it may not accept
+a rewrite. The assignment asks for a narrower change. Find one component in which repeated
+expensive calculations can be replaced by stored results, show with unit tests that the
+results do not change, and only then add parallelism.
+
+The program we were given~\cite{russell2026assignment} works over the finite field $\Fq$,
+using the library \code{algebra-finite-fields}~\cite{russell2026fields}. It fills two $N \times N$
+matrices $A$ and $B$ with random field elements, computes $C = AB$, computes $\det(A)$,
+$\det(B)$ and $\det(C)$ independently, and checks that $\det(C) = \det(A)\det(B)$. The
+assignment text reports 6~h~40~min for $N = 4000$ on one core of an Apple M3 Max, and
+20~min~16~s for a cached version on the same machine.
+
+This report covers five pieces of work.
+\begin{itemize}
+  \item We traced the dependency chain and profiled the original program to find where the
+        time goes (Sections~\ref{sec:background} and~\ref{sec:profiling}).
+  \item We wrote a cached finite field that can be dropped in place of the original
+        (Section~\ref{sec:cached}).
+  \item We wrote unit tests that compare the cached field with the original on every
+        element and every pair of elements (Section~\ref{sec:equivalence}).
+  \item We measured run time and peak memory before and after
+        (Section~\ref{sec:sequential}).
+  \item We wrote an MPI program for the determinant and measured where it starts to beat the
+        cached sequential program (Sections~\ref{sec:mpidesign} and~\ref{sec:mpiresults}).
+\end{itemize}

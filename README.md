@@ -68,3 +68,19 @@ Consult AI during the assignment and make sure you can explain the algorithms yo
 ### Conclusion
 
 Improve the sequential implementation before measuring what parallel execution adds. A drop-in replacement lets you focus on the expensive computation when you have limited control over the dependency chain. Use the original arithmetic on cache misses and demonstrate equivalent results with unit tests.
+
+## Group submission
+
+What this repository adds to the assignment.
+
+| Part | Where |
+| --- | --- |
+| Cached finite field | Its own repository, named in `cmake/Dependencies.cmake`. That entry is the only change the original program needs. |
+| MPI determinant | `src/mpi_determinant.cpp`, built as `algebra_mpi_determinant` |
+| Benchmarks and profiles | `scripts/` and `benchmarks/`, with the measurements in `results/` |
+| Report | `report/ieee_report.tex` |
+| Slides | `slides/presentation.pptx` |
+| How to run everything | `docs/RUNNING.md` |
+| The algorithms in plain words | `docs/EXPLAINER.md` |
+
+The other edits to the build files add the new programs: an option and the `benchmarks` folder in `CMakeLists.txt`, and the MPI target in `src/CMakeLists.txt`.

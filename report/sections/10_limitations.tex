@@ -1,0 +1,23 @@
+\section{Limitations}
+\label{sec:limitations}
+
+\textbf{Measurements.} The sequential times in Table~\ref{tab:sequential} come from one
+machine, with \SeqRunsPhrase. \SeqRepeatSentence{} Small differences between neighbouring
+rows therefore carry no meaning. The conclusions rest on ratios far larger than that.
+\MpiNoiseSentence
+
+\textbf{The tables and the processor's caches.} The two pair tables are 3.5~MB each. Whether
+they fit in a core's cache decides how long a lookup takes, above all in the matrix product,
+where the additions wait for each other. The speedup therefore depends on the processor, and
+the figures here should not be read as what another machine will show.
+
+\textbf{The sequential reference in the MPI comparison.} The MPI program times the
+assignment's elimination on an array whose size is chosen at run time, so that one binary
+can sweep all sizes. The assignment program fixes $N$ at compile time and checks every
+index. \MpiReferenceSentence
+
+\textbf{Where the MPI processes ran.} \MpiNodesLimitation
+
+\textbf{Scope of the cache.} The tables need about $4q^2$ bytes, which is why fields above 4096
+elements are forwarded to the original arithmetic. Constructing elements is not cached. The
+matrix product is still sequential and is now the largest part of the program's run time.

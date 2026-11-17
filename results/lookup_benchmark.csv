@@ -1,0 +1,10 @@
+method,operation,pattern,operations,seconds,ns_per_operation
+original,add,independent,2000000,0.050078,25.039
+original,multiply,independent,2000000,0.30729,153.645
+original,multiply-add,chained,2000000,0.376007,188.004
+unordered_map,add,independent,20000000,0.680343,34.0172
+unordered_map,multiply,independent,20000000,0.857331,42.8665
+unordered_map,multiply-add,chained,20000000,6.50442,325.221
+table,add,independent,20000000,0.0358805,1.79402
+table,multiply,independent,20000000,0.0322187,1.61093
+table,multiply-add,chained,20000000,0.259492,12.9746

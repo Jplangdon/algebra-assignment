@@ -1,0 +1,13 @@
+The assignment program multiplies two $N \times N$ matrices over the finite field with
+$11^3 = 1331$ elements and checks that $\det(AB) = \det(A)\det(B)$. An instruction profile
+shows that \ProfileField\% of its work is finite field arithmetic and the memory allocation
+that comes with it. We replace the finite field class with a cached drop-in. An element becomes a 16-bit index, and each
+operation reads its result from a table that the original arithmetic fills on first use.
+Header paths, type names and the CMake target are unchanged, so the program changes
+implementation by editing one dependency entry, and unit tests compare the two implementations
+on all 1\,771\,561 operand pairs. On our test machine the $N=\SeqLargestBoth$ run falls from
+\SeqOriginalAtLargest{} to \SeqCachedAtLargest{}, a factor of \SeqSpeedupAtLargest, and peak
+memory falls from \SeqOriginalMemoryAtLargest{} to \SeqCachedMemoryAtLargest. For the
+determinants we add an MPI program that distributes the matrix by columns, so that choosing a
+pivot needs no communication and each panel of columns needs one broadcast.
+\MpiAbstractSentence

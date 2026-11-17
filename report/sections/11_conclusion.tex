@@ -1,0 +1,16 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+Almost all of the original program's work is finite field arithmetic that repeats the same
+1.77 million calculations. Replacing the finite field class with a table-backed class of
+the same name removed that work without touching the matrix library or the program, and
+exhaustive tests show that the two classes return the same results. On \SequentialMachine{}
+the $N = \SeqLargestBoth$ run became \SeqSpeedupAtLargest~times faster and its peak memory
+\SeqMemoryRatioAtLargest~times smaller.
+
+A hash map keyed by the operands, the first choice the assignment text suggests, was not
+enough: \LookupConclusionPhrase, because its lookups wait on memory. An array indexed by the
+two operands does not have that problem.
+
+For the determinant, distributing columns makes pivot selection a local decision and
+reduces the communication to one broadcast per panel. \MpiBreakEvenSentence.

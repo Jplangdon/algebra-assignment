@@ -1,0 +1,10 @@
+add_executable(algebra_cache_statistics cache_statistics.cpp)
+target_compile_features(algebra_cache_statistics PRIVATE cxx_std_20)
+target_link_libraries(algebra_cache_statistics PRIVATE algebra::finite_fields)
+
+add_executable(algebra_lookup_benchmark lookup_benchmark.cpp)
+target_compile_features(algebra_lookup_benchmark PRIVATE cxx_std_20)
+target_link_libraries(algebra_lookup_benchmark PRIVATE algebra::finite_fields)
+
+add_executable(algebra_measure measure.cpp)
+target_compile_features(algebra_measure PRIVATE cxx_std_20)
