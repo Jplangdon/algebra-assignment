@@ -92,20 +92,33 @@ def is_virtual_machine():
 
 def mpi_name():
     """Name and version of the MPI library behind mpirun, if there is one."""
-    try:
-        output = subprocess.run(["mpirun", "--version"], capture_output=True, text=True,
-                                timeout=20)
-    except (OSError, subprocess.SubprocessError):
-        return ""
-    lines = [line.strip() for line in (output.stdout or output.stderr).splitlines()
-             if line.strip()]
-    if not lines:
-        return ""
-    if lines[0].startswith("HYDRA"):            # MPICH prints its build details
+    def lines_of(command):
+        try:
+            output = subprocess.run(command, capture_output=True, text=True, timeout=20)
+        except (OSError, subprocess.SubprocessError):
+            return []
+        # Some installations print a warning in a box of dashes before the
+        # version, so lines without a letter or a digit are dropped and the
+        # version line is looked for instead of taking the first line.
+        return [line.strip() for line in (output.stdout + "\n" + output.stderr).splitlines()
+                if re.search(r"[A-Za-z0-9]", line)]
+
+    lines = lines_of(["mpirun", "--version"])
+    for line in lines:                              # mpirun (Open MPI) 4.1.6
+        if re.match(r"^\S+ \((Open MPI|OpenRTE)\) v?\d", line):
+            return line
+    if any(line.startswith("HYDRA") for line in lines):    # MPICH prints its build details
         for line in lines:
             if line.startswith("Version:"):
                 return "MPICH " + line.split(":", 1)[1].strip()
-    return lines[0]
+    for line in lines:                              # Intel(R) MPI Library for Linux* OS, Version ...
+        if "Intel(R) MPI" in line:
+            return line
+    for line in lines_of(["ompi_info", "--version"]):      # Open MPI v5.0.8
+        match = re.match(r"^Open MPI v?(\d\S*)", line)
+        if match:
+            return "mpirun (Open MPI) " + match.group(1)
+    return ""
 
 
 def read_rows(path):

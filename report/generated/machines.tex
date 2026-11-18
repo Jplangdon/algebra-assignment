@@ -1,1 +1,19 @@
-% Only one machine has sequential results, so there is nothing to compare.
+Table~\ref{tab:machines} gives the same comparison for every machine the program was run on, at the largest size each of them ran with both libraries.
+
+\begin{table}[t]
+  \caption{Original and cached finite field on each machine.}
+  \label{tab:machines}
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l r r r r r r@{}}
+\toprule
+& & \multicolumn{3}{c}{Run time (s)} & \multicolumn{2}{c}{Memory (MiB)} \\
+\cmidrule(lr){3-5}\cmidrule(l){6-7}
+Machine & $N$ & Original & Cached & Speedup & Original & Cached \\
+\midrule
+cloud-vm & 1000 & 819 & 37.6 & 21.8$\times$ & 217 & 18.4 \\
+lemmen & 1000 & 378 & 15.3 & 24.7$\times$ & 218 & 18.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
