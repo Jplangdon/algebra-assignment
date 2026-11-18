@@ -1,8 +1,9 @@
-#!/bin/bash
+#!/bin/bash -l
 #SBATCH --job-name=algebra-mpi
 #SBATCH --nodes=4
 #SBATCH --ntasks-per-node=1
-#SBATCH --time=02:00:00
+#SBATCH --time=00:05:00
+#SBATCH --partition=demo
 #SBATCH --output=slurm-%j.out
 #
 # Runs the MPI sweep with one process per node, so that every process is on a
@@ -18,6 +19,7 @@
 # If jobs on this cluster need a "module load" line, put it below this comment.
 # If they start MPI programs with srun instead of mpirun, also add:
 #     export MPI_LAUNCHER=srun
+module load openmpi
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:-.}"
 bash scripts/run_mpi.sh --skip-build --label "${ALGEBRA_LABEL:-cluster}" "$@"
