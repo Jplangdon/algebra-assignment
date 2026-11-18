@@ -4,6 +4,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=00:05:00
 #SBATCH --partition=demo
+#SBATCH --exclusive
 #SBATCH --output=slurm-%j.out
 #
 # Runs the MPI sweep with one process per node, so that every process is on a
