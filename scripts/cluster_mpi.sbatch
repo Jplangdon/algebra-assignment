@@ -7,18 +7,21 @@
 #SBATCH --exclusive
 #SBATCH --output=slurm-%j.out
 #
-# Runs the MPI sweep with one process per node, so that every process is on a
-# different machine. From the repository folder on the login node:
+# Runs part of the MPI sweep with one process per node, so that every process is
+# on a different machine. The settings above are the ones the course cluster
+# needs: the demo partition, its 5 minute limit, and --exclusive, without which
+# the cluster runs two jobs on the same machines at the same time.
 #
-#     scripts/run_mpi.sh --build-only
-#     sbatch scripts/cluster_mpi.sbatch
+# From the repository folder on the login node, after the build described in
+# docs/RUNNING.md, section 5:
 #
-# Change --nodes above to the number of machines to use. The sweep runs with
-# 1, 2, 4, ... processes up to that number. Extra options are passed on, for
-# example:  sbatch scripts/cluster_mpi.sbatch --blocks "1 4 16 64"
+#     sbatch scripts/cluster_mpi.sbatch --processes "2 4" --sizes "100 200 400" --repeat 3
 #
-# If jobs on this cluster need a "module load" line, put it below this comment.
-# If they start MPI programs with srun instead of mpirun, also add:
+# Everything after the script name is passed on to scripts/run_mpi.sh. Choose
+# sizes and repeats that fit in the time limit. The six commands that produced
+# the measurements in results/mpi.csv are listed in docs/RUNNING.md, section 5.
+#
+# On a cluster that starts MPI programs with srun instead of mpirun, add:
 #     export MPI_LAUNCHER=srun
 module load openmpi
 set -euo pipefail

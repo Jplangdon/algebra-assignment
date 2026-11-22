@@ -12,6 +12,13 @@ some-folder/
     algebra-finite-fields-cached/    the cached finite field library
 ```
 
+Both are on GitHub. From the folder that should hold them:
+
+```sh
+git clone https://github.com/Jplangdon/algebra-assignment.git
+git clone https://github.com/Jplangdon/algebra-finite-fields-cached.git
+```
+
 The scripts look for the library at `../algebra-finite-fields-cached`. If it lives somewhere else, put the path in the `CACHED_FIELDS` variable, for example `CACHED_FIELDS=/home/jplangdon/libs/algebra-finite-fields-cached scripts/run_sequential.sh`.
 
 On Ubuntu (including WSL), the tools are installed with:
@@ -55,12 +62,12 @@ scripts/run_sequential.sh --label lemmen
 
 | Command | Sizes, original | Sizes, cached | Rough time |
 | --- | --- | --- | --- |
-| `scripts/run_sequential.sh --label lemmen --preset quick` | 100, 200, 400 | 100 to 1000 | a few minutes |
-| `scripts/run_sequential.sh --label lemmen` | 100 to 800 | 100 to 2000 | about 20 minutes |
+| `scripts/run_sequential.sh --label lemmen --preset quick` | 100, 200, 400 | 100 to 1000 | about a minute |
+| `scripts/run_sequential.sh --label lemmen` | 100 to 800 | 100 to 2000 | about 7 minutes |
 | `scripts/run_sequential.sh --label lemmen --preset overnight` | 100 to 4000 | 100 to 6000 | most of a day |
-| `scripts/run_sequential.sh --label lemmen --original "" --cached "4000"` | none | 4000 | under an hour |
+| `scripts/run_sequential.sh --label lemmen --original "" --cached "4000"` | none | 4000 | about 20 minutes |
 
-The times are what the cloud test machine needed; a faster processor needs less. The original program at 4000 is the long one (the assignment quotes 6 hours 40 minutes on an M3 Max).
+The first, second and fourth times are worked out from the run times measured on Lemmen (Intel Core Ultra 9 275HX); a slower processor needs more. The overnight preset was not run, so its time is an estimate. The original program at 4000 is the long one (the assignment quotes 6 hours 40 minutes on an M3 Max).
 
 A size that is already in the file for that label is skipped, so a run that was stopped can be started again with the same command.
 
@@ -89,47 +96,66 @@ The second line is the panel-width comparison.
 
 The assignment asks for determinants "across multiple machines", so the numbers that count for the break-even point are these.
 
-1. Copy both folders to the login node. From the folder that holds them, on your own computer:
+The rows labelled `cluster` in `results/mpi.csv` were measured on the course cluster on the evening of 17 November 2026, in jobs 99 to 104, with the steps below. The cluster's clock runs on UTC, so its own records show 18 November. Three things about that cluster shape the steps:
 
-   ```sh
-   scp -r algebra-assignment algebra-finite-fields-cached jplang01@mpi.nathan.cse.louisville.edu:~/
-   ```
+- Its CMake is 3.22, and the algebra repositories need 3.24.
+- MPI comes from a module, loaded with `module load openmpi`.
+- The `demo` partition stops every job after 5 minutes, and it puts two jobs on the same machines unless a job asks for them with `--exclusive`.
 
-2. Log in and build on the login node (the compute nodes may have no internet access, and the first build downloads the other algebra repositories):
+1. Log in and get both repositories:
 
    ```sh
    ssh jplang01@mpi.nathan.cse.louisville.edu
+   cd ~
+   git clone https://github.com/Jplangdon/algebra-assignment.git
+   git clone https://github.com/Jplangdon/algebra-finite-fields-cached.git
+   ```
+
+2. Put a newer CMake in the home folder, load MPI and build on the login node:
+
+   ```sh
+   curl -L -o cmake.tar.gz https://github.com/Kitware/CMake/releases/download/v3.28.3/cmake-3.28.3-linux-x86_64.tar.gz
+   tar xzf cmake.tar.gz
+   rm cmake.tar.gz
+   export PATH=$HOME/cmake-3.28.3-linux-x86_64/bin:$PATH
+   module load openmpi
    cd ~/algebra-assignment
    scripts/run_mpi.sh --build-only
    ```
 
-3. Submit the job:
+   The `export` line lasts for one login. It is only needed for building.
+
+3. Submit the sweep as six short jobs. Each one fits in the 5 minutes, and because the job script asks for its machines with `--exclusive`, they run one after another:
 
    ```sh
-   sbatch scripts/cluster_mpi.sbatch
+   sbatch scripts/cluster_mpi.sbatch --processes "2 4" --sizes "10 20 30 40 50 75 100 150 200 300 400 600 800 1000" --repeat 3
+   sbatch scripts/cluster_mpi.sbatch --processes "2" --sizes "1500 2000" --repeat 3
+   sbatch scripts/cluster_mpi.sbatch --processes "4" --sizes "1500 2000" --repeat 3
+   sbatch scripts/cluster_mpi.sbatch --processes "1" --sizes "10 20 30 40 50 75 100 150 200 300 400 600 800 1000 1500" --repeat 3
+   sbatch scripts/cluster_mpi.sbatch --processes "1" --sizes "2000" --repeat 3
+   sbatch scripts/cluster_mpi.sbatch --processes "4" --blocks "1 4 32 128" --sizes "100 200 400 800 1000" --repeat 3
    ```
 
-   The job script asks for 4 nodes with one process on each and runs the sweep with 1, 2 and 4 processes under the label `cluster`. To use a different number of machines, change the `#SBATCH --nodes=4` line. If the cluster needs a `module load` line or a partition name, copy those lines from the job script that worked for the Pi assignment. If that script started its program with `srun` instead of `mpirun`, add the line `export MPI_LAUNCHER=srun` as well. The place for these lines is marked in `scripts/cluster_mpi.sbatch`.
+   The job script asks for 4 machines with one process on each, so a run with 2 processes uses 2 machines and a run with 4 uses 4. `--repeat 3` is given because the default is 5 and the committed `cluster` rows have 3. At N = 2000 one repeat of all process counts on both matrices takes close to 2 minutes, which is why the two largest sizes have jobs of their own. The last job is the panel-width comparison. Together the six took about 13 minutes.
 
-   The `demo` partition allows 5 minutes per job, which is the `--time` in the job script. The full sweep takes longer than that, so it has to be split over several jobs with `--sizes` (and `--repeat`, since the committed `cluster` rows have 3 repeats, not the default 5). At N = 2000 one repeat of all process counts on both matrices takes close to 2 minutes, so the largest sizes need a job of their own or fewer repeats per job.
+4. Watch them with `squeue -u jplang01`. `PD` is waiting, `CF` is machines starting and `R` is running. The output of each job is in `slurm-<job number>.out` and should end with `Done. Results are in`. The results are in `results/mpi.csv`: 408 rows labelled `cluster`.
 
-4. Watch it with `squeue -u jplang01`. The output is in `slurm-<job number>.out` and the results in `results/mpi.csv`.
+   A size that already has rows in the file for the label `cluster` is skipped. If the time limit stops a job in the middle of a size, delete that size's `cluster` rows from `results/mpi.csv` before submitting again, or the size stays short of its repeats.
 
-5. Copy the results back. On your own computer, from inside `algebra-assignment`:
+5. Put the results in the repository. The login node has its own key on GitHub, so it can push:
 
    ```sh
-   scp jplang01@mpi.nathan.cse.louisville.edu:~/algebra-assignment/results/mpi.csv results/mpi-cluster.csv
-   scp jplang01@mpi.nathan.cse.louisville.edu:~/algebra-assignment/results/environments.csv results/environments-cluster.csv
+   git remote set-url origin git@github.com:Jplangdon/algebra-assignment.git
+   git add results/mpi.csv results/environments.csv
+   git commit -m "Add the cluster measurements"
+   git push
    ```
 
-   Then add their rows to the local files. Rows that are already there are not added twice:
+   If git asks who you are, set `git config user.name` and `git config user.email` first. Then `git pull` on your own computer.
 
-   ```sh
-   python3 scripts/bench.py merge results/mpi-cluster.csv results/mpi.csv
-   python3 scripts/bench.py merge results/environments-cluster.csv results/environments.csv
-   ```
+The first attempt at sizes 1500 and 2000 went wrong and was thrown away. Two jobs were submitted together without `--exclusive`, the cluster ran them at the same time on the same machines, and both took about twice as long as they should have. All `cluster` rows were measured again with `--exclusive`. The discarded rows are in the history of this repository, in the commit before "Rerun the cluster measurements with exclusive nodes".
 
-   The two `-cluster` files can be deleted afterwards. The same command combines result files that group members send from their own machines, for example `python3 scripts/bench.py merge sequential-from-diego.csv results/sequential.csv`.
+Result files that group members send from their own machines are combined with `python3 scripts/bench.py merge`, for example `python3 scripts/bench.py merge sequential-from-diego.csv results/sequential.csv`. Rows that are already there are not added twice.
 
 ## 6. The profiles
 
@@ -147,7 +173,7 @@ python3 scripts/make_report_assets.py --sequential-label lemmen --mpi-label clus
 
 - `--sequential-label` is the machine whose before-and-after numbers go in the report.
 - `--mpi-label` is the machine or cluster whose MPI numbers go in the report.
-- Left out, each one defaults to the label with the most measurements.
+- Left out, each defaults to the label with the most measurements. With the result files as they are now that is `cloud-vm` for both, so name the labels.
 
 It writes `report/figures/*.pdf`, `report/generated/*.tex`, `slides/figures/*.png` and `slides/data.json`. Every measured number in the report comes from those files, so after new measurements run this again and recompile. The text itself does not have to be edited for the numbers to change, but read the results paragraphs again afterwards, because sentences that interpret the numbers were written against the first set of measurements.
 
@@ -172,24 +198,25 @@ To rebuild the deck from new measurements, after step 7:
 ```sh
 sudo apt install nodejs npm
 cd slides
-npm install pptxgenjs
+npm install pptxgenjs@4.0.1
 node make_slides.js
 ```
 
-This replaces `slides/presentation.pptx`, including anything edited in it by hand. If the deck has been edited in PowerPoint, keep that copy under another name first. The same figures the report uses are in `slides/figures` as pictures, in case pasting one is easier.
+`npm` leaves a `node_modules` folder and two `package` files in `slides`. Git ignores all three. This replaces `slides/presentation.pptx`, including anything edited in it by hand. If the deck has been edited in PowerPoint, keep that copy under another name first. The same figures the report uses are in `slides/figures` as pictures, in case pasting one is easier.
 
 ## 10. Building the assignment program by hand
 
-The scripts above pick the library folder for you. To build exactly as the assignment's README does, CMake needs to know where the cached library is. Until the library is on GitHub, point it at the folder:
+The scripts above build against the library folder next to this one. Built exactly as the assignment's README does, with no extra options, CMake fetches the cached library from GitHub at the tag named in `cmake/Dependencies.cmake`:
 
 ```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DALGEBRA_ASSIGNMENT_SIZE=400 \
-    -DFETCHCONTENT_SOURCE_DIR_ALGEBRA_FINITE_FIELDS=../algebra-finite-fields-cached
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DALGEBRA_ASSIGNMENT_SIZE=400
 cmake --build build --parallel
 ./build/src/algebra_determinants
 ```
 
-The library is on GitHub with the tag named in `cmake/Dependencies.cmake`, so the `-DFETCHCONTENT_SOURCE_DIR...` line is only needed to build against a local checkout. That one file is the only place where the program chooses between the original and the cached library.
+It should print `Identity verified true`. On Lemmen this size takes under 2 seconds with the cached library and about 23 seconds with the original.
+
+That one file is the only place where the program chooses between the original and the cached library. To build against a local copy of the library instead, add `-DFETCHCONTENT_SOURCE_DIR_ALGEBRA_FINITE_FIELDS=../algebra-finite-fields-cached` to the first command.
 
 If the first `cmake` command stops with `Permission denied (publickey)`, the machine has no SSH key registered with GitHub. Either add one, or run this once, which makes git use HTTPS for GitHub:
 

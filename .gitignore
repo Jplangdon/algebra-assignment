@@ -15,3 +15,5 @@ report/*.blg
 report/*.log
 report/*.out
 report/*.synctex.gz
+slides/package.json
+slides/package-lock.json
