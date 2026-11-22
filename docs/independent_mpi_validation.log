@@ -1,0 +1,68 @@
+Independent MPI Validation
+Sun Nov 22 18:14:16 EST 2026
+5c8f7b847944e7ceb8d606bb04ddf4afffa4230e
+Environment: Ubuntu WSL, Open MPI
+================================
+TEST: random | size=10 | processes=2
+Matrix dimension 10
+Processes 2 on 1 node(s)
+Panel width 8
+Case random, seed 123456
+Table warm-up seconds 1.692617202
+det(A) = 6 + 3*x^1 + 8*x^2
+Sequential seconds 0.000075987
+MPI seconds 0.000584878 (distribute 0.000008355, eliminate 0.000576523)
+Results match true
+det(B) = 7 + 8*x^1 + 10*x^2
+Sequential seconds 0.000023761
+MPI seconds 0.000054611 (distribute 0.000002754, eliminate 0.000051857)
+Results match true
+================================
+TEST: random | size=50 | processes=4
+Matrix dimension 50
+Processes 4 on 1 node(s)
+Panel width 8
+Case random, seed 123456
+Table warm-up seconds 1.912771073
+det(A) = 7 + 2*x^1
+Sequential seconds 0.001622852
+MPI seconds 0.001606622 (distribute 0.000023440, eliminate 0.001583182)
+Results match true
+det(B) = 7 + 7*x^1
+Sequential seconds 0.004954312
+MPI seconds 0.001728082 (distribute 0.000019700, eliminate 0.001708382)
+Results match true
+================================
+TEST: singular | size=50 | processes=4
+Matrix dimension 50
+Processes 4 on 1 node(s)
+Panel width 8
+Case singular, seed 123456
+Table warm-up seconds 1.496954319
+det(singular) = 0
+Sequential seconds 0.001236550
+MPI seconds 0.003740243 (distribute 0.000043826, eliminate 0.003696417)
+Results match true
+================================
+TEST: zero-leading | size=50 | processes=4
+Matrix dimension 50
+Processes 4 on 1 node(s)
+Panel width 8
+Case zero-leading, seed 123456
+Table warm-up seconds 1.374850274
+det(zero-leading) = 6 + 1*x^1 + 7*x^2
+Sequential seconds 0.001128095
+MPI seconds 0.005117491 (distribute 0.000030413, eliminate 0.005087078)
+Results match true
+================================
+TEST: permutation | size=50 | processes=4
+Matrix dimension 50
+Processes 4 on 1 node(s)
+Panel width 8
+Case permutation, seed 123456
+Table warm-up seconds 1.493606258
+det(permutation) = 3 + 1*x^1 + 3*x^2
+Sequential seconds 0.000088232
+MPI seconds 0.000086435 (distribute 0.000019077, eliminate 0.000067358)
+Results match true
+================================
