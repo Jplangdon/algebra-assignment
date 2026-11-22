@@ -415,18 +415,21 @@ section("The cached finite field");
     "them on every cache miss. The modulus is not chosen by the cached class. It asks the " +
     "original class, so both use x^3 + x + 4. In the assignment repository the only edit is " +
     "the repository and tag of this one entry in cmake/Dependencies.cmake. main.cpp and the " +
-    "matrix library are not touched.");
+    "matrix library are not touched. Built exactly as the assignment README says, with no " +
+    "extra options, the program fetches the cached library and prints Identity verified true.");
   const cw = 6.0;
   card(slide, LEFT, TOP, cw, 3.1, C.text2);
   text(slide, [
     { text: "FetchContent_Declare(", options: { breakLine: true } },
     { text: "    algebra_finite_fields", options: { breakLine: true } },
-    { text: "    GIT_REPOSITORY <cached repository>", options: { breakLine: true, color: C.accent1, bold: true } },
-    { text: "    GIT_TAG        <its tag>", options: { breakLine: true, color: C.accent1, bold: true } },
+    { text: "    GIT_REPOSITORY git@github.com:Jplangdon/", options: { breakLine: true, color: C.accent1, bold: true } },
+    { text: "        algebra-finite-fields-cached.git", options: { breakLine: true, color: C.accent1, bold: true } },
+    { text: "    GIT_TAG        cached-v1", options: { breakLine: true, color: C.accent1, bold: true } },
     { text: ")" },
-  ], { x: LEFT + 0.35, y: TOP + 0.3, w: cw - 0.7, h: 2.5, fontFace: MONO, fontSize: 16,
+  ], { x: LEFT + 0.35, y: TOP + 0.3, w: cw - 0.7, h: 2.5, fontFace: MONO, fontSize: 13,
     color: C.background1, valign: "mid", paraSpaceAfter: 4 });
-  text(slide, "cmake/Dependencies.cmake: the two highlighted lines are the whole change.",
+  text(slide, "cmake/Dependencies.cmake: the highlighted lines are the whole change. The plain " +
+    "README build with them prints Identity verified true.",
     { x: LEFT, y: TOP + 3.3, w: cw, h: 0.7, fontSize: 14 });
   const x = LEFT + cw + 0.5;
   const w = W - LEFT - x;
@@ -459,9 +462,9 @@ section("The cached finite field");
     "elements both ways and compare them. They run add and multiply on all 1,771,561 " +
     "ordered pairs and negate and reciprocal on all elements. Every comparison is done " +
     "twice, because the first time through is answered by cache misses and the second time " +
-    "by cache hits, and both paths have to be right. All 21 tests pass with GCC 13 and with " +
-    "Clang 18, with both standard libraries, and under the address, undefined-behaviour and " +
-    "thread sanitizers. To check that " +
+    "by cache hits, and both paths have to be right. All 21 tests pass on cloud-vm with GCC 13 " +
+    "and with Clang 18, with both standard libraries, and under the address, undefined-behaviour " +
+    "and thread sanitizers, and on lemmen with GCC 15.2. To check that " +
     "the tests can fail, we put one wrong value into a table in a copy of the library: 6 of " +
     "the 10 new tests failed." + (identical
       ? ` Finally, the assignment program prints identical determinants with both libraries at N = ${T.SeqIdenticalSizes}.`
@@ -472,8 +475,8 @@ section("The cached finite field");
     "add and multiply on every ordered pair: the first pass is all misses, the second all hits");
   stat(slide, LEFT + cw + 0.3, TOP, cw, ch, "21 of 21 tests pass",
     "11 are the original library's own tests, unchanged. 10 are new and compare the two classes");
-  stat(slide, LEFT, TOP + ch + 0.3, cw, ch, "2 compilers, 3 sanitizers",
-    "GCC 13 and Clang 18 with both standard libraries; address, undefined-behaviour and thread sanitizers",
+  stat(slide, LEFT, TOP + ch + 0.3, cw, ch, "3 compilers, 3 sanitizers",
+    "GCC 13 and Clang 18 (both standard libraries; address, undefined-behaviour and thread sanitizers) on cloud-vm; GCC 15.2 on lemmen",
     { color: C.text1 });
   stat(slide, LEFT + cw + 0.3, TOP + ch + 0.3, cw, ch, "6 of 10 new tests fail",
     "when one stored table value is changed on purpose, so the tests can catch a wrong cache",
