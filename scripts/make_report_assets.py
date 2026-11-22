@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Turns the result files into the report's figures, tables and numbers.
 
-    python3 scripts/make_report_assets.py
-    python3 scripts/make_report_assets.py --sequential-label Lemmen --mpi-label cluster
+    python3 scripts/make_report_assets.py --sequential-label lemmen --mpi-label cluster
+
+A label names the machine whose results go in the report. It can be left out
+only while one machine has results of that kind. With several, the script stops
+and lists them instead of choosing one.
 
 Reads   results/*.csv
 Writes  report/figures/*.pdf      figures for the paper
@@ -94,8 +97,12 @@ def pick_label(rows, wanted, what):
         if wanted not in labels:
             sys.exit(f"no {what} results for label {wanted!r}; available: {', '.join(labels)}")
         return wanted
-    # Default: the machine with the most measurements.
-    return max(labels, key=lambda label: sum(1 for row in rows if row["label"] == label))
+    if len(labels) > 1:
+        # Choosing for the user would put one machine's numbers in the report without
+        # anyone having asked for them.
+        sys.exit(f"{what} results come from more than one machine ({', '.join(labels)}); "
+                 f"name one with --{what.lower()}-label")
+    return labels[0]
 
 
 def summarise_sequential(rows, label):

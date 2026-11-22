@@ -173,7 +173,7 @@ python3 scripts/make_report_assets.py --sequential-label lemmen --mpi-label clus
 
 - `--sequential-label` is the machine whose before-and-after numbers go in the report.
 - `--mpi-label` is the machine or cluster whose MPI numbers go in the report.
-- Left out, each defaults to the label with the most measurements. With the result files as they are now that is `cloud-vm` for both, so name the labels.
+- Both are needed as the result files are now. A label can be left out only while one machine has results of that kind. With several, the script stops and lists them instead of choosing one.
 
 It writes `report/figures/*.pdf`, `report/generated/*.tex`, `slides/figures/*.png` and `slides/data.json`. Every measured number in the report comes from those files, so after new measurements run this again and recompile. The text itself does not have to be edited for the numbers to change, but read the results paragraphs again afterwards, because sentences that interpret the numbers were written against the first set of measurements.
 

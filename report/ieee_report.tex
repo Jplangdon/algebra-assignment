@@ -8,8 +8,10 @@
 %  The tables, the figures and every measured number in the text come from
 %  ./generated and ./figures. Those are written by
 %      python3 scripts/make_report_assets.py --sequential-label lemmen --mpi-label cluster
-%  from the files in results/. Without the labels the script picks cloud-vm. After new measurements, run that script again
-%  and recompile; do not type measured numbers into the text.
+%  from the files in results/. Both labels are needed: several machines have
+%  results, and without a label the script stops instead of choosing one.
+%  After new measurements, run that script again and recompile; do not type
+%  measured numbers into the text.
 % =========================================================================
 \documentclass[conference]{IEEEtran}
 
