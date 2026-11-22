@@ -25,7 +25,8 @@ on $40 \times 40$ matrices in both implementations and compares the three determ
 Beyond the unit tests, the determinants printed by the assignment program built against each
 library were \SeqIdenticalVerdict{} for $N = $~\SeqIdenticalSizes.
 
-The 21 tests pass with GCC~13 and with Clang~18, the latter with both libstdc++ and libc++,
-and under the address, undefined-behaviour and thread sanitizers. To check that the new
+On cloud-vm (Table~\ref{tab:environments}) the 21 tests pass with GCC~13 and with Clang~18,
+the latter with both libstdc++ and libc++, and under the address, undefined-behaviour and
+thread sanitizers. To check that the new
 tests can fail, we changed one stored table value in a copy of the library: six of the ten
 new tests then failed, while the original 11 still passed.

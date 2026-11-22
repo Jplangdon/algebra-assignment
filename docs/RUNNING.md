@@ -111,6 +111,8 @@ The assignment asks for determinants "across multiple machines", so the numbers 
 
    The job script asks for 4 nodes with one process on each and runs the sweep with 1, 2 and 4 processes under the label `cluster`. To use a different number of machines, change the `#SBATCH --nodes=4` line. If the cluster needs a `module load` line or a partition name, copy those lines from the job script that worked for the Pi assignment. If that script started its program with `srun` instead of `mpirun`, add the line `export MPI_LAUNCHER=srun` as well. The place for these lines is marked in `scripts/cluster_mpi.sbatch`.
 
+   The `demo` partition allows 5 minutes per job, which is the `--time` in the job script. The full sweep takes longer than that, so it has to be split over several jobs with `--sizes` (and `--repeat`, since the committed `cluster` rows have 3 repeats, not the default 5). At N = 2000 one repeat of all process counts on both matrices takes close to 2 minutes, so the largest sizes need a job of their own or fewer repeats per job.
+
 4. Watch it with `squeue -u jplang01`. The output is in `slurm-<job number>.out` and the results in `results/mpi.csv`.
 
 5. Copy the results back. On your own computer, from inside `algebra-assignment`:
@@ -187,7 +189,7 @@ cmake --build build --parallel
 ./build/src/algebra_determinants
 ```
 
-Once the library is on GitHub with the tag named in `cmake/Dependencies.cmake`, the `-DFETCHCONTENT_SOURCE_DIR...` line is no longer needed. That one file is the only place where the program chooses between the original and the cached library.
+The library is on GitHub with the tag named in `cmake/Dependencies.cmake`, so the `-DFETCHCONTENT_SOURCE_DIR...` line is only needed to build against a local checkout. That one file is the only place where the program chooses between the original and the cached library.
 
 If the first `cmake` command stops with `Permission denied (publickey)`, the machine has no SSH key registered with GitHub. Either add one, or run this once, which makes git use HTTPS for GitHub:
 
@@ -206,7 +208,7 @@ Options: `--size N`, `--block B` (panel width, default 8), `--repeat R`, `--case
 
 ## 11. Putting the cached library on GitHub
 
-`cmake/Dependencies.cmake` expects the library at `git@github.com:Jplangdon/algebra-finite-fields-cached.git` with the tag `cached-v1`. Nothing exists there yet. Forking the original keeps its history, so anyone can see exactly which files changed.
+`cmake/Dependencies.cmake` expects the library at `git@github.com:Jplangdon/algebra-finite-fields-cached.git` with the tag `cached-v1`, and it is published there. The steps below are how it was made, kept for reference. Forking the original keeps its history, so anyone can see exactly which files changed.
 
 1. On GitHub, open `https://github.com/nathanjrussell/algebra-finite-fields`, press **Fork**, and name the fork `algebra-finite-fields-cached`.
 

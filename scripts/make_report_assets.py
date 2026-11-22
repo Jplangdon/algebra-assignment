@@ -572,14 +572,27 @@ def figure_speedup(style, sequential):
     figure, axes = new_axes(style, 0.9)
     plot_line(axes, style, sizes, speedups, CACHED, None)
     best = max(range(len(sizes)), key=lambda i: speedups[i])
-    for index in sorted({0, best, len(sizes) - 1}):
+    last = len(sizes) - 1
+    # When the best size is next to the last one, the two centred labels overlap,
+    # so push them apart.
+    neighbours = best == last - 1
+    for index in sorted({0, best, last}):
+        if neighbours and index == best:
+            offset, align = (-2, 7), "right"
+        elif neighbours and index == last:
+            offset, align = (2, 7), "left"
+        else:
+            offset, align = (0, 7), "center"
         axes.annotate(f"{speedups[index]:.1f}×", (sizes[index], speedups[index]),
-                      xytext=(0, 7), textcoords="offset points", ha="center", va="bottom",
+                      xytext=offset, textcoords="offset points", ha=align, va="bottom",
                       color=INK, fontsize=style.font)
     size_axis(axes, thin_ticks(sizes))
     axes.set_ylabel("Original time / cached time")
     axes.set_ylim(0, max(speedups) * 1.22)
     axes.margins(x=0.08)
+    if neighbours:
+        # Room for the last label, which now sits to the right of its point.
+        axes.set_xlim(right=axes.get_xlim()[1] * 1.18)
     return save(figure, style, "speedup")
 
 
@@ -709,6 +722,10 @@ def tidy_compiler(text):
     if match:
         return ("Apple Clang " if "Apple" in text else "Clang ") + match.group(1)
     match = re.match(r"^(?:c\+\+|g\+\+|gcc)\s.*?(\d+\.\d+(?:\.\d+)?)\s*$", text)
+    if match:
+        return "GCC " + match.group(1)
+    # 'c++ (GCC) 11.5.0 20240719 (Red Hat 11.5.0-5)' -> 'GCC 11.5.0'
+    match = re.match(r"^(?:c\+\+|g\+\+|gcc)\s+\(GCC\)\s+(\d+\.\d+(?:\.\d+)?)", text)
     if match:
         return "GCC " + match.group(1)
     return text
