@@ -94,25 +94,28 @@
 % ---------------------------------------------------------------------------
 \begin{frame}{Where the finite field sits in the dependency chain}
   \centering
+  % Same graph as Fig. 1 of the report: an arrow points to a dependency.
   \begin{tikzpicture}[
-      node distance=0.45cm and 0.9cm,
-      lib/.style={draw=muted,rounded corners,minimum width=3.6cm,minimum height=0.75cm,
-                  font=\small,fill=white},
-      hot/.style={lib,draw=accent,very thick,fill=accent!8,font=\small\bfseries},
+      lib/.style={draw=muted,rounded corners,minimum width=2.9cm,minimum height=0.75cm,
+                  font=\footnotesize,fill=white,align=center},
+      hot/.style={lib,draw=accent,very thick,fill=accent!8,font=\footnotesize\bfseries},
       dep/.style={-{Stealth[length=2mm]},muted}]
-    \node[lib]  (prog)  {algebra\_determinants};
-    \node[lib,  below left=of prog]  (mat) {algebra-matrices};
-    \node[hot,  below right=of prog] (ff)  {algebra-finite-fields};
-    \node[lib,  below=of ff]  (poly) {algebra-polynomials};
-    \node[lib,  below=of poly] (ring) {algebra-rings};
-    \node[lib,  below=of ring] (grp)  {algebra-groups / core};
+    \node[lib] (prog) at (0,0)      {algebra-assignment\\(product and determinants)};
+    \node[lib] (mat)  at (-2.6,-1.6) {algebra-matrices};
+    \node[hot] (ff)   at (1.6,-1.6)  {algebra-finite-fields\\(the class we cache)};
+    \node[lib] (poly) at (-0.4,-3.1) {algebra-polynomials};
+    \node[lib] (ring) at (2.8,-3.1)  {algebra-rings};
+    \node[lib] (core) at (-2.6,-4.6) {algebra-core};
+    \node[lib] (grp)  at (2.8,-4.6)  {algebra-groups};
     \draw[dep] (prog) -- (mat);
     \draw[dep] (prog) -- (ff);
-    \draw[dep] (mat)  -- (ff);
     \draw[dep] (ff)   -- (poly);
-    \draw[dep] (poly) -- (ring);
+    \draw[dep] (ff)   -- (ring);
+    \draw[dep] (mat)  -- (core);
+    \draw[dep] (poly) -- (core);
     \draw[dep] (ring) -- (grp);
-    \node[right=0.6cm of poly,align=left,font=\footnotesize,text width=5.2cm] {%
+    \draw[dep] (grp)  -- (core);
+    \node[anchor=west,align=left,font=\footnotesize,text width=4.6cm] at (4.6,-2.3) {%
       Everything below \texttt{FiniteField} is reached only through four of its
       functions: \textbf{add, negate, multiply, reciprocal}.\\[0.6em]
       \textcolor{accent}{We replace this one class.} Nothing above or below it changes.};
@@ -488,10 +491,12 @@ FetchContent_Declare(
       Cluster, $p$ processes on $p$ machines, $b=8$. Tested
       $N = 10,\ldots,2000$ (16 sizes).
       \begin{itemize}\small
-        \item $p=4$: first faster at $N=100$, but only 1.07$\times$:
-              within the noise. \textbf{Clearly faster from $N=150$} (1.43$\times$).
+        \item \textbf{Break-even with $p=4$: $N=100$}, and MPI stays faster at every
+              larger size. MPI won at least 5 of the 6 runs at each of those sizes.
+        \item The margin at $N=100$ is small (1.07$\times$); from $N=150$ it is 1.43$\times$.
         \item $p=2$: faster from $N=150$.
-        \item $N=2000$: 11.7 s $\rightarrow$ 3.2 s, \textbf{3.74$\times$} with 4 processes.
+        \item $N=2000$: 11.7 s $\rightarrow$ 3.2 s, \textbf{3.74$\times$} with 4 processes;
+              3.43$\times$ of that comes from going from 1 to 4 processes.
       \end{itemize}
       {\scriptsize\color{muted}$p=1$ is already $\approx$1.05$\times$ because its loop order
        differs from the sequential reference, not because of parallelism.}
@@ -555,7 +560,7 @@ FetchContent_Declare(
       \stat{1 entry}{in \texttt{Dependencies.cmake}; identical results on all 1\,771\,561 pairs}
     \end{column}
     \begin{column}{0.32\textwidth}
-      \stat{3.74$\times$}{MPI determinant at $N=2000$, 4 machines; worth it from $N\approx150$}
+      \stat{3.74$\times$}{MPI determinant at $N=2000$, 4 machines; faster than sequential from $N=100$}
     \end{column}
   \end{columns}
   \vspace{2em}
