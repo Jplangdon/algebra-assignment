@@ -236,7 +236,10 @@ FetchContent_Declare(
 \end{semiverbatim}
       \vspace{0.3em}
       {\footnotesize Point it back at the original repository and the
-      original program builds unchanged.}
+      original program builds unchanged.}\\[0.5em]
+      {\footnotesize\textbf{Checked:} the plain build from the assignment README,
+      with no extra options, fetches the cached library and prints
+      \texttt{Identity verified true}.}
     \end{column}
     \begin{column}{0.42\textwidth}
       \textbf{Preserved}
@@ -277,8 +280,11 @@ FetchContent_Declare(
         \item $\det C = \det A\cdot\det B$ holds in every run.
       \end{itemize}
       \vspace{0.5em}
-      {\footnotesize\color{muted}The original library's own tests are also run, unchanged,
-       against the cached build.}
+      \stat{21 / 21}{tests pass: GCC 13 and Clang 18 (with sanitizers) on cloud-vm,
+                     GCC 15.2 on lemmen}
+      \\[0.6em]
+      {\footnotesize\color{muted}They include the original library's own 11 tests, run
+       unchanged against the cached build.}
     \end{column}
   \end{columns}
 \end{frame}
@@ -505,7 +511,7 @@ FetchContent_Declare(
       \end{itemize}
     \end{column}
     \begin{column}{0.46\textwidth}
-      \stat{222 / 222}{test cases pass}
+      \stat{222 / 222}{test cases pass on cloud-vm and on lemmen}
       \\[0.8em]
       {\small 1--4 processes; panel widths 1, 3, 16; awkward sizes 1, 2, 5, 17;
        matrices that force row swaps, zero multipliers, a zero leading entry or a
