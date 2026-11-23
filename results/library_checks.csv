@@ -1,0 +1,7 @@
+label,check,compiler,standard_library,build,tests,passed,failed,failed_tests,detail,library_commit,recorded
+lemmen,library tests,c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0,,release,21,21,0,,,6444da3,2026-11-22
+lemmen,library tests,c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0,,address and undefined-behaviour sanitizers,21,21,0,,,6444da3,2026-11-22
+lemmen,library tests,c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0,,thread sanitizer,21,21,0,,,6444da3,2026-11-22
+lemmen,matrix tests,c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0,,release,8,8,0,,,6444da3,2026-11-22
+lemmen,wrong product: new tests,c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0,,release,10,9,1,CachedFiniteField.MultipliesEveryPairLikeTheOriginal,the product of the elements with indices 700 and 900 is stored as their sum,6444da3,2026-11-22
+lemmen,wrong product: original tests,c++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0,,release,11,11,0,,the product of the elements with indices 700 and 900 is stored as their sum,6444da3,2026-11-22
