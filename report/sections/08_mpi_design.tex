@@ -42,8 +42,8 @@ panel at once: a flag for a zero determinant, the $b$ pivot rows and the $b$ col
 multipliers. Listing~\ref{lst:apply} is the routine every process runs on each of its
 remaining columns.
 
-\begin{lstlisting}[caption={Applying one panel to one column. \code{first} is the panel's
-first column.},label={lst:apply}]
+\begin{lstlisting}[float=t,caption={Applying one panel to one column. \code{first} is the
+panel's first column.},label={lst:apply}]
 for (step = 0; step < steps; ++step) {
   k = first + step;
   if (pivots[step] != k)
@@ -67,7 +67,7 @@ elimination.
 Rank~0 generates the matrix and sends each process its columns once. After that the only
 messages are the panel broadcasts, $\lceil N/b \rceil$ of them. Together they carry each
 multiplier once, about $N^2/2$ field elements whatever the value of $b$, so $b$ trades the
-number of messages against their size and against the time the other processes wait while
+number of messages against their size and against the time the others wait while
 one process prepares a panel.
 
 The cached field matters here as well. A cached element is a plain 16-bit value, so a

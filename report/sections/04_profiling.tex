@@ -19,12 +19,11 @@ one compiler to the next.
 
 Lines of the polynomial, ring and group libraries account for \ProfileLibraries\% of the
 instructions. Another \ProfileMemory\% are lines of \code{std::vector} and other standard
-library headers and of the memory allocator, which is where the storage of the polynomials
-shows up: each polynomial, including every intermediate result, is a \code{std::vector} on
-the heap. The finite field class itself accounts for \ProfileFieldClass\%. The lines of the
+library headers and of the memory allocator, because each polynomial, including every
+intermediate result, is a \code{std::vector} on the heap. The finite field class itself accounts for \ProfileFieldClass\%. The lines of the
 matrix library and of \code{main.cpp}, which hold the loops of the product and of the
-elimination, account for \ProfileProgram\%, and the remaining \ProfileOther\% is code the
-profile does not assign to any of these.
+elimination, account for \ProfileProgram\%. The remaining \ProfileOther\% is code the
+profile assigns to none of these.
 
 Timing single operations gives the same picture. On \SequentialMachine{}
 (Table~\ref{tab:environments}) one field multiplication with the original library takes

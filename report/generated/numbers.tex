@@ -73,7 +73,7 @@
 \newcommand{\MpiClearSize}{150}
 \newcommand{\MpiMarginPercent}{7}
 \newcommand{\MpiMarginWins}{5 of 6}
-\newcommand{\MpiWinsSentence}{The margin at $N=100$ is small, though: the ratio is 1.07, one determinant takes 2.0 ms, and MPI won 5 of the 6 runs. At $N=75$ MPI was slower, with a ratio of 0.76, and from $N=150$ on, where the ratio is 1.43, it won every run. The break-even therefore lies between $N=75$ and $N=150$, and our runs do not place it more exactly.}
+\newcommand{\MpiWinsSentence}{The margin at $N=100$ is small, though: the ratio is 1.07, one determinant takes 2.0 ms, and MPI won 5 of the 6 runs. At $N=75$ MPI was slower, with a ratio of 0.76, and from $N=150$ on, where the ratio is 1.43, it won every run. The break-even therefore lies between $N=75$ and $N=150$.}
 \newcommand{\MpiConclusionSentence}{With 4 processes the smallest tested size at which MPI was faster is $N = 100$, by a margin of 7\% that is within the spread between runs; from $N = 150$ upward it won every run, and at $N = 2000$ it is 3.74 times as fast}
 \newcommand{\MpiParallelGain}{3.43}
 \newcommand{\MpiOneProcessRatio}{1.06}
@@ -85,7 +85,7 @@
 \newcommand{\MpiNoiseSentence}{The same sequential determinant was timed in several jobs. The medians of those jobs differ by up to a factor of 2.2 for determinants shorter than 0.1~s and by up to 3\% for longer ones, so ratios close to 1 carry little meaning.}
 \newcommand{\MpiTestCount}{222}
 \newcommand{\MpiTestVerdict}{all of which pass}
-\newcommand{\LibraryChecksParagraph}{}
+\newcommand{\LibraryChecksParagraph}{On lemmen (Table~\ref{tab:environments}) the 21 tests pass with GCC~15.2.0 in an optimized build and under the address, undefined-behaviour and thread sanitizers. The 8 tests of \code{algebra-matrices} pass there against the cached library. To check that the new tests can fail, \code{scripts/check\_library.sh} builds a copy of the library in which the product of the elements with indices 700 and 900 is stored as their sum: 1 of the 10 new tests then fails, while the 11 original tests still pass.}
 \newcommand{\MpiBlockSentence}{Table~\ref{tab:blocks} repeats the measurement for other panel widths. At $N = 1000$ the ratio lies between 2.28 and 3.54 for all 5 widths. The choice matters most at $N = 100$, where $b = 1$ reaches 0.30 and $b = 8$ reaches 1.07.}
 \newcommand{\MpiOneProcessWidthSentence}{}
 \newcommand{\MpiReferenceSentence}{The two were not timed on the same machine, so we do not compare them.}

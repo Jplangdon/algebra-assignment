@@ -9,8 +9,8 @@ assignment program was built twice from the same source, once against the origin
 and once against the cached one, and run on one core. A small launcher starts the program
 and reads its wall-clock time and its peak resident memory from the operating system when
 it exits. The identity $\det(C) = \det(A)\det(B)$ was verified by the program in every run.
-Every table and figure in this report is generated from the recorded result files by a
-script in the repository.
+Every table and figure in this report is generated from the result files by a script in
+the repository.
 
 \begin{table}[t]
   \caption{Machines used for the measurements.}
@@ -48,8 +48,7 @@ $N = \SeqLargestBoth$, the largest size we ran with both libraries, the original
 \end{figure}
 
 Fig.~\ref{fig:speedup} shows the speedup. \SeqGainSentence. At the other end,
-\SeqSmallestSentence. The reason for the small gain there is the first use of each operand
-pair.
+\SeqSmallestSentence. The reason is the first use of each operand pair.
 Fig.~\ref{fig:cache} shows how the tables fill. At $N = 100$ only
 \CacheHitAtHundred\% of the additions and multiplications are answered from a table, and the
 rest still run the original arithmetic once. The share passes 99\% at

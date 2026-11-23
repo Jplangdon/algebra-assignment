@@ -34,7 +34,7 @@ The layers are written for clarity, not speed, and the costs multiply. One field
 multiplication multiplies two polynomials, which is up to nine coefficient products. Each
 coefficient product is carried out by repeated addition. The product polynomial is then
 divided by the modulus to get the remainder. Every intermediate polynomial is a
-\code{std::vector} allocated on the heap.
+\code{std::vector} on the heap.
 
 \subsection{The workload}
 
@@ -43,4 +43,4 @@ determinant is a Gaussian elimination with about $N^3/3$ multiplications, negati
 additions. In total the program asks for about $5N^3$ field operations, which is
 $3.2 \times 10^{11}$ for $N = 4000$. The operands of all of them come from only 1331
 values, so a binary operation has only $1331^2 = 1\,771\,561$ distinct inputs. Each one is
-therefore recomputed tens of thousands of times, which is the situation caching is for.
+therefore recomputed tens of thousands of times, the situation caching is for.

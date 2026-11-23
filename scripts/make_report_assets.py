@@ -451,7 +451,7 @@ def horizontal_bars(axes, style, labels, values, colour, value_text):
 
 def figure_dependencies(style):
     use_style(style)
-    figure = plt.figure(figsize=(style.width, style.height * 0.8))
+    figure = plt.figure(figsize=(style.width, style.height * 0.72))
     figure.patch.set_facecolor(SURFACE)
     axes = figure.add_axes([0, 0, 1, 1])
     axes.set_xlim(0, 10)
@@ -521,11 +521,10 @@ PROFILE_GROUPS = [
     ("algebra-polynomials", ("polynomials",), "libraries"),
     ("algebra-groups", ("groups",), "libraries"),
     ("algebra-rings and -core", ("rings", "core"), "libraries"),
-    ("std::vector and other\nstandard library headers",
-     ("std::vector and other library headers",), "memory"),
+    ("standard library headers", ("std::vector and other library headers",), "memory"),
     ("memory allocator", ("heap allocator (libc)", "operator new and delete"), "memory"),
     ("finite field class", ("finite fields",), "field class"),
-    ("matrix library\nand main.cpp", ("matrices", "assignment program"), "program"),
+    ("matrix library, main.cpp", ("matrices", "assignment program"), "program"),
     ("other", ("other",), "other"),
 ]
 PROFILE_PARTS = ["libraries", "memory", "field class", "program", "other"]
@@ -571,7 +570,7 @@ def figure_profile(style, profile):
         return None
     labels = [label for label, _ in shares["bars"]]
     values = [value for _, value in shares["bars"]]
-    figure, axes = new_axes(style, 1.0)
+    figure, axes = new_axes(style, 0.8)
     horizontal_bars(axes, style, labels, values, ORIGINAL,
                     [f"{percent_text(v)}%" for v in values])
     axes.set_xlim(0, max(values) * 1.22)
@@ -1056,22 +1055,29 @@ def library_checks(rows, label, in_table):
         def tex_name(row):
             return tex_escape(compiler_name(row)).replace(" ", "~", 1)
 
+        def under(rows):
+            """'under the address, undefined-behaviour and thread sanitizers'"""
+            names = []
+            for row in rows:
+                names += re.sub(r" sanitizers?$", "", row["build"]).split(" and ")
+            return ("under the " + listing(names)
+                    + (" sanitizers" if len(names) > 1 else " sanitizer"))
+
         compilers = sorted({tex_name(row) for row in plain_builds + sanitized})
         if len(compilers) == 1:
             # One compiler: name it once and list the builds.
-            builds = (["in an optimized build"] if plain_builds else []) + [
-                "under the " + row["build"] for row in sanitized]
-            sentences.append(f"{where} the {listing(counts)} tests pass with {compilers[0]}"
-                             + (": " + listing(builds) if len(builds) > 1 else
-                                " " + builds[0]) + ".")
+            builds = (["in an optimized build"] if plain_builds else []) + (
+                [under(sanitized)] if sanitized else [])
+            sentences.append(f"{where} the {listing(counts)} tests pass with {compilers[0]} "
+                             + " and ".join(builds) + ".")
         elif compilers:
             parts = []
             if plain_builds:
                 parts.append("in an optimized build with "
                              + listing([tex_name(row) for row in plain_builds]))
             for compiler in sorted({tex_name(row) for row in sanitized}):
-                builds = [row["build"] for row in sanitized if tex_name(row) == compiler]
-                parts.append(f"with {compiler} under the " + " and under the ".join(builds))
+                parts.append(f"with {compiler} " + under(
+                    [row for row in sanitized if tex_name(row) == compiler]))
             sentences.append(f"{where} the {listing(counts)} tests pass "
                              + (parts[0] if len(parts) == 1 else
                                 ", ".join(parts[:-1]) + ", and " + parts[-1]) + ".")
@@ -1087,9 +1093,8 @@ def library_checks(rows, label, in_table):
     if matrix:
         row = matrix[0]
         if passed(row):
-            sentences.append(f"The {row['tests']} tests of \\code{{algebra-matrices}}, which "
-                             "build matrices over the field, pass there against the cached "
-                             "library.")
+            sentences.append(f"The {row['tests']} tests of \\code{{algebra-matrices}} pass "
+                             "there against the cached library.")
         else:
             sentences.append(f"Of the {row['tests']} tests of \\code{{algebra-matrices}}, "
                              f"{row['failed']} FAIL when that library is built against the "
@@ -1528,8 +1533,7 @@ def main():
                         wins += (f" At $N={lower}$ MPI was slower, with a ratio of "
                                  f"{ratios[lower]:.2f}, and from $N={clear}$ on, where the ratio "
                                  f"is {ratios[clear]:.2f}, it won every run. The break-even "
-                                 f"therefore lies between $N={lower}$ and $N={clear}$, and our "
-                                 "runs do not place it more exactly.")
+                                 f"therefore lies between $N={lower}$ and $N={clear}$.")
                     else:
                         wins += (f" From $N={clear}$ on, where the ratio is "
                                  f"{ratios[clear]:.2f}, it won every run.")
