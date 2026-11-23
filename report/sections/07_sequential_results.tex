@@ -47,8 +47,9 @@ $N = \SeqLargestBoth$, the largest size we ran with both libraries, the original
   \label{fig:runtime}
 \end{figure}
 
-The gain grows with the matrix (Fig.~\ref{fig:speedup}), and
-\SeqSmallestSentence. The reason is the first use of each operand pair.
+Fig.~\ref{fig:speedup} shows the speedup. \SeqGainSentence. At the other end,
+\SeqSmallestSentence. The reason for the small gain there is the first use of each operand
+pair.
 Fig.~\ref{fig:cache} shows how the tables fill. At $N = 100$ only
 \CacheHitAtHundred\% of the additions and multiplications are answered from a table, and the
 rest still run the original arithmetic once. The share passes 99\% at

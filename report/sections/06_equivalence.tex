@@ -5,8 +5,7 @@ Because the field has only 1331 elements, the comparison with the original does 
 rely on samples. The tests fall into four groups.
 
 \textbf{The original test suite, unchanged.} The library's own test file is compiled
-against the cached classes without edits and its 11 tests pass. The 8 tests of
-\code{algebra-matrices}, which build matrices over the field, pass as well.
+against the cached classes without edits and its 11 tests pass.
 
 \textbf{Every element and every pair.} A new test file builds each element in both
 implementations and compares the stored polynomial, the coefficients, the printed form and
@@ -25,8 +24,4 @@ on $40 \times 40$ matrices in both implementations and compares the three determ
 Beyond the unit tests, the determinants printed by the assignment program built against each
 library were \SeqIdenticalVerdict{} for $N = $~\SeqIdenticalSizes.
 
-On cloud-vm (Table~\ref{tab:environments}) the 21 tests pass with GCC~13 and with Clang~18,
-the latter with both libstdc++ and libc++, and under the address, undefined-behaviour and
-thread sanitizers. To check that the new
-tests can fail, we changed one stored table value in a copy of the library: six of the ten
-new tests then failed, while the original 11 still passed.
+\LibraryChecksParagraph

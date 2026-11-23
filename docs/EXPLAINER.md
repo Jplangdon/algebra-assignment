@@ -88,7 +88,7 @@ Sending a message has a fixed cost that does not depend on how much arithmetic t
 ## Questions you may be asked
 
 **Why did you cache the finite field class and not something else?**
-The profile shows almost all of the work happens inside finite field operations, and every one of them goes through four functions of that one class: add, negate, multiply, reciprocal. Caching there means the matrix library, the program, and the polynomial, ring and group libraries underneath all stay as they are.
+The profile shows where the instructions are: most are lines of the polynomial, ring and group libraries underneath the finite field class, and most of the rest are `std::vector` and memory allocator code, which is how the polynomials are stored. The lines of the matrix library and of `main.cpp` are a fraction of a percent. In the product and the elimination, all of that work is reached through four functions of that one class: add, negate, multiply, reciprocal. Caching there means the matrix library, the program, and the polynomial, ring and group libraries underneath all stay as they are.
 
 **The assignment suggests `std::unordered_map`. Why didn't you use it?**
 We measured it. A hash map lookup has to compute a hash, read a bucket, and then follow a pointer to a node on the heap, each read waiting for the one before, so each lookup waits on memory. In the matrix product, where each addition needs the previous result first, those waits line up one after another. Our elements are already numbers from 0 to 1330, so the pair `(a, b)` is a perfect array position and no hashing is needed.

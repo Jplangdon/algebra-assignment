@@ -53,15 +53,16 @@ dependency in CMake. We made three changes to a copy of \code{algebra-finite-fie
 \end{itemize}
 The prime field, the modulus search, the element enumeration and the build files are
 unchanged, and so is the CMake target name. In the assignment repository the switch is the
-repository and tag lines of Listing~\ref{lst:switch}, in \code{cmake/Dependencies.cmake}.
-No source file of the program or of the matrix library changes.
+repository and commit lines of Listing~\ref{lst:switch}, in \code{cmake/Dependencies.cmake}.
+The commit is the one tagged \code{cached-v1} in that repository. No source file of the
+program or of the matrix library changes.
 
 \begin{lstlisting}[language={},caption={The dependency entry that selects the
 library.},label={lst:switch}]
 FetchContent_Declare(
   algebra_finite_fields
   GIT_REPOSITORY git@github.com:Jplangdon/algebra-finite-fields-cached.git
-  GIT_TAG        cached-v1
+  GIT_TAG 6444da30dc44288c694e07a8811cf75a3ffcff2d
 )
 \end{lstlisting}
 

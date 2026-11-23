@@ -319,18 +319,22 @@ section("The problem");
     groups: [7.55, TOP + 3.85, "algebra-groups"],
   };
   const centre = (key) => nodes[key][0] + bw / 2 - 0.9;
-  const edge = (from, to) => {
+  // leave and arrive move the ends of an arrow along the box edge, in inches from its
+  // middle, where several arrows share an edge.
+  const edge = (from, to, leave = 0, arrive = 0) => {
     const [, y1] = nodes[from];
     const [, y2] = nodes[to];
     if (y1 === y2) {
       arrow(slide, nodes[from][0] - 0.9, y1 + bh / 2, nodes[to][0] - 0.9 + bw, y2 + bh / 2);
     } else {
-      arrow(slide, centre(from), y1 + bh, centre(to), y2);
+      arrow(slide, centre(from) + leave, y1 + bh, centre(to) + arrive, y2);
     }
   };
+  // One arrow for every dependency a repository declares in its cmake/Dependencies.cmake.
   [["assignment", "matrices"], ["assignment", "fields"], ["fields", "polynomials"],
-    ["fields", "rings"], ["rings", "groups"], ["matrices", "core"], ["polynomials", "core"],
-    ["groups", "core"]].forEach(([from, to]) => edge(from, to));
+    ["fields", "rings"], ["rings", "groups"], ["rings", "core", -0.7, 1.0],
+    ["matrices", "core", 0, -0.8], ["polynomials", "core", 0, 0.1],
+    ["groups", "core"]].forEach(([from, to, leave, arrive]) => edge(from, to, leave, arrive));
   Object.entries(nodes).forEach(([key, [x, y, label]]) => {
     const chosen = key === "fields";
     box(slide, x - 0.9, y, bw, bh, label, chosen
@@ -349,26 +353,37 @@ section("The problem");
 section("The cached finite field");
 {
   const profile = data.profile;
-  const slide = contentSlide(`${T.ProfileField}% of the work is finite field arithmetic`,
+  const slide = contentSlide(
+    `${T.ProfileLibraries}% of the work is polynomial, ring and group code`,
     "We profiled the original program with Callgrind, which counts executed instructions, at " +
-    `N = 60. Reducing a polynomial modulo x^3 + x + 4 takes ${T.ProfileReduction}% of the ` +
-    `instructions. Allocating and freeing the vectors that hold polynomials takes ` +
-    `${T.ProfileHeap}%, because every intermediate polynomial is a std::vector on the heap. ` +
-    `Multiplying polynomials takes ${T.ProfileMultiply}%. The loops of the matrix product and ` +
-    `of the elimination themselves are only ${T.ProfileMatrix}%. So ${T.ProfileField}% of the ` +
-    "instructions belong to the field elements: their arithmetic and the memory it allocates. " +
-    "Speeding up the matrix loops would gain almost nothing. The arithmetic is the target.");
+    "N = 60. The chart groups the instructions by the source file of the line they were " +
+    "compiled from. We group by file and not by function, because the function an inlined " +
+    "line is counted under changes from one compiler to the next. " +
+    `${T.ProfileLibraries}% are lines of the polynomial, ring and group libraries, which the ` +
+    `program reaches only through the finite field class. Another ${T.ProfileMemory}% are ` +
+    "lines of std::vector and other standard library headers and of the memory allocator. " +
+    "That is where the storage of the polynomials shows up: every polynomial, including " +
+    "every intermediate result, is a std::vector on the heap. The finite field class itself " +
+    `is ${T.ProfileFieldClass}%. The lines of the matrix library and of main.cpp, which hold ` +
+    `the loops of the product and of the elimination, are ${T.ProfileProgram}%. So speeding ` +
+    "up the matrix loops would gain almost nothing. The code underneath the finite field " +
+    "class is the target.");
   barChart(slide, { x: LEFT, y: TOP - 0.1, w: 7.6, h: 4.9 }, profile.categories,
     [{ name: "Share of executed instructions", values: profile.percent, color: HEX.original }],
-    { format: '0.0"%"', max: Math.max(...profile.percent) * 1.18 });
+    { format: '[<1]0.00"%";0.0"%"', max: Math.max(...profile.percent) * 1.2 });
   const x = 8.6;
-  stat(slide, x, TOP, W - LEFT - x, 2.2, `${T.ProfileField}%`,
-    "of the instructions belong to field elements: their arithmetic and the memory it allocates",
-    { figureSize: 44 });
-  stat(slide, x, TOP + 2.4, W - LEFT - x, 1.75, `${T.ProfileMatrix}%`,
-    "are the loops of the product and the elimination", { color: C.text1 });
-  text(slide, "Callgrind instruction counts, original program, N = 60",
-    { x, y: TOP + 4.3, w: W - LEFT - x, h: 0.4, fontSize: 12, transparency: 35 });
+  const w = W - LEFT - x;
+  stat(slide, x, TOP, w, 1.5, `${T.ProfileLibraries}%`,
+    "of the instructions are lines of the polynomial, ring and group libraries",
+    { figureHeight: 0.7 });
+  stat(slide, x, TOP + 1.7, w, 1.5, `${T.ProfileMemory}%`,
+    "are std::vector and memory allocator code: every polynomial is a vector on the heap",
+    { figureHeight: 0.7, color: C.text1 });
+  stat(slide, x, TOP + 3.4, w, 1.5, `${T.ProfileProgram}%`,
+    "are lines of the matrix library and main.cpp, the loops of the product and the elimination",
+    { figureHeight: 0.7, color: C.text1 });
+  text(slide, "Callgrind instruction counts by source file, original program, N = 60",
+    { x: LEFT, y: TOP + 4.95, w: 7.6, h: 0.3, fontSize: 12, transparency: 35 });
 }
 {
   const slide = contentSlide("A cached operation is one table read",
@@ -414,7 +429,8 @@ section("The cached finite field");
     "algebra::uncached. The original classes are still compiled, and the new class calls " +
     "them on every cache miss. The modulus is not chosen by the cached class. It asks the " +
     "original class, so both use x^3 + x + 4. In the assignment repository the only edit is " +
-    "the repository and tag of this one entry in cmake/Dependencies.cmake. main.cpp and the " +
+    "the repository and commit of this one entry in cmake/Dependencies.cmake. The commit is " +
+    "the one tagged cached-v1 in the library's repository. main.cpp and the " +
     "matrix library are not touched. Built exactly as the assignment README says, with no " +
     "extra options, the program fetches the cached library and prints Identity verified true.");
   const cw = 6.0;
@@ -424,12 +440,12 @@ section("The cached finite field");
     { text: "    algebra_finite_fields", options: { breakLine: true } },
     { text: "    GIT_REPOSITORY git@github.com:Jplangdon/", options: { breakLine: true, color: C.accent1, bold: true } },
     { text: "        algebra-finite-fields-cached.git", options: { breakLine: true, color: C.accent1, bold: true } },
-    { text: "    GIT_TAG        cached-v1", options: { breakLine: true, color: C.accent1, bold: true } },
+    { text: "    GIT_TAG 6444da30dc44288c694e07a8811cf75a3ffcff2d", options: { breakLine: true, color: C.accent1, bold: true } },
     { text: ")" },
-  ], { x: LEFT + 0.35, y: TOP + 0.3, w: cw - 0.7, h: 2.5, fontFace: MONO, fontSize: 13,
+  ], { x: LEFT + 0.3, y: TOP + 0.3, w: cw - 0.6, h: 2.5, fontFace: MONO, fontSize: 12,
     color: C.background1, valign: "mid", paraSpaceAfter: 4 });
-  text(slide, "cmake/Dependencies.cmake: the highlighted lines are the whole change. The plain " +
-    "README build with them prints Identity verified true.",
+  text(slide, "cmake/Dependencies.cmake: the highlighted lines are the whole change. The commit " +
+    "is the one tagged cached-v1. The plain README build with them prints Identity verified true.",
     { x: LEFT, y: TOP + 3.3, w: cw, h: 0.7, fontSize: 14 });
   const x = LEFT + cw + 0.5;
   const w = W - LEFT - x;
@@ -462,25 +478,47 @@ section("The cached finite field");
     "elements both ways and compare them. They run add and multiply on all 1,771,561 " +
     "ordered pairs and negate and reciprocal on all elements. Every comparison is done " +
     "twice, because the first time through is answered by cache misses and the second time " +
-    "by cache hits, and both paths have to be right. All 21 tests pass on cloud-vm with GCC 13 " +
-    "and with Clang 18, with both standard libraries, and under the address, undefined-behaviour " +
-    "and thread sanitizers, and on lemmen with GCC 15.2. To check that " +
-    "the tests can fail, we put one wrong value into a table in a copy of the library: 6 of " +
-    "the 10 new tests failed." + (identical
+    "by cache hits, and both paths have to be right. Further tests use the field from four " +
+    "threads at once, and check a field of 8192 elements, which is too large for the tables " +
+    "and is passed through to the original arithmetic." +
+    (known(T.LibraryChecksParagraph) ? ` ${T.LibraryChecksParagraph}` : "") + (identical
       ? ` Finally, the assignment program prints identical determinants with both libraries at N = ${T.SeqIdenticalSizes}.`
       : ""));
+  // What scripts/check_library.sh recorded on the report's machine, if it was run there.
+  const checks = (data.checks || [])[0];
+  const passing = checks
+    ? checks.library.filter((row) => row.failed === 0 && row.passed === row.tests) : [];
   const cw = (WIDTH - 0.3) / 2;
   const ch = 1.95;
   stat(slide, LEFT, TOP, cw, ch, "1,771,561 pairs, twice",
     "add and multiply on every ordered pair: the first pass is all misses, the second all hits");
   stat(slide, LEFT + cw + 0.3, TOP, cw, ch, "21 of 21 tests pass",
     "11 are the original library's own tests, unchanged. 10 are new and compare the two classes");
-  stat(slide, LEFT, TOP + ch + 0.3, cw, ch, "3 compilers, 3 sanitizers",
-    "GCC 13 and Clang 18 (both standard libraries; address, undefined-behaviour and thread sanitizers) on cloud-vm; GCC 15.2 on lemmen",
-    { color: C.text1 });
-  stat(slide, LEFT + cw + 0.3, TOP + ch + 0.3, cw, ch, "6 of 10 new tests fail",
-    "when one stored table value is changed on purpose, so the tests can catch a wrong cache",
-    { color: C.text1 });
+  if (passing.length > 1) {
+    const setups = new Set(passing.map((row) => row.compiler)).size;
+    const sanitizers =
+      (passing.some((row) => row.build === "address and undefined-behaviour sanitizers") ? 2 : 0) +
+      (passing.some((row) => row.build === "thread sanitizer") ? 1 : 0);
+    const figure = [setups > 1 ? `${setups} compiler setups` : "",
+      sanitizers ? `${sanitizers} sanitizers` : ""].filter((part) => part).join(", ");
+    stat(slide, LEFT, TOP + ch + 0.3, cw, ch, figure, checks.text.library, { color: C.text1 });
+  } else {
+    stat(slide, LEFT, TOP + ch + 0.3, cw, ch, "1,331 elements, both ways",
+      "every element is built in both classes and compared: polynomial, coefficients, printed form, zero and one",
+      { color: C.text1 });
+  }
+  if (checks && checks.wrong && checks.wrong.new_failed > 0) {
+    const wrong = checks.wrong;
+    stat(slide, LEFT + cw + 0.3, TOP + ch + 0.3, cw, ch,
+      `${wrong.new_failed} of ${wrong.new_tests} new tests ${wrong.new_failed === 1 ? "fails" : "fail"}`,
+      `when, in a copy of the library, ${wrong.detail}.` + (wrong.original_failed === 0
+        ? ` The ${wrong.original_tests} original tests still pass.` : ""),
+      { color: C.text1 });
+  } else {
+    stat(slide, LEFT + cw + 0.3, TOP + ch + 0.3, cw, ch, "4 threads, 8,192 elements",
+      "more tests fill the tables from four threads at once, and use a field of 8,192 elements, which bypasses the tables",
+      { color: C.text1 });
+  }
   if (identical) {
     text(slide, `The assignment program prints identical determinants with both libraries at N = ${T.SeqIdenticalSizes}.`,
       { x: LEFT, y: TOP + 2 * ch + 0.5, w: WIDTH, h: 0.4, fontSize: 14 });
@@ -556,9 +594,10 @@ section("Before and after");
   const seq = data.sequential;
   const cache = data.cache;
   const slide = contentSlide("Small matrices gain little: the tables fill first",
-    "The gain grows with the matrix. " + (known(T.SeqSmallestSentence)
-      ? `On the left, ${T.SeqSmallestSentence}. ` : "") +
-    "The reason is the first use of each pair: it still runs the original arithmetic, plus " +
+    (known(T.SeqGainSentence) ? `${T.SeqGainSentence}. ` : "") +
+    (known(T.SeqSmallestSentence) ? `At the other end, ${T.SeqSmallestSentence}. ` : "") +
+    "The reason for the small gain there is the first use of each pair: it still runs the " +
+    "original arithmetic, plus " +
     "the bookkeeping of storing the result. The right chart counts this. It is the share of " +
     "additions and multiplications that were answered from a table over one whole run. At " +
     `N = 100 only ${T.CacheHitAtHundred}% are answered from a table. The share passes 99% at ` +
@@ -671,9 +710,14 @@ section("Determinants with MPI");
   const most = T.MpiMostProcesses;
   const single = T.MpiNodes === "1";
   const stays = known(T.MpiStaysFasterSize);
-  const title = stays
-    ? `With ${most} processes, MPI is faster from N = ${T.MpiStaysFasterSize} upward`
-    : `With ${most} processes, MPI was not faster at the largest size`;
+  // The size from which MPI won every single run can be larger than the first size at
+  // which its median was faster. Then the title names both.
+  const clear = stays && known(T.MpiClearSize) && T.MpiClearSize !== T.MpiStaysFasterSize;
+  const title = !stays
+    ? `With ${most} processes, MPI was not faster at the largest size`
+    : clear
+      ? `With ${most} processes, MPI breaks even near N = ${T.MpiStaysFasterSize} and wins every run from N = ${T.MpiClearSize}`
+      : `With ${most} processes, MPI is faster from N = ${T.MpiStaysFasterSize} upward`;
   const slide = contentSlide(title,
     `We tested N = ${T.MpiSizes} with ${T.MpiProcessCounts} processes and a panel width of ` +
     `${T.MpiBlock}. In every run rank 0 computes the determinant sequentially and with MPI ` +
@@ -752,8 +796,12 @@ section("Wrap-up");
     "memory, without editing the program or the matrix library, and exhaustive tests show " +
     "the same results. A hash map was not enough for the matrix product; an array indexed by " +
     "the two operands was. And for the determinant, giving each process whole columns makes " +
-    "pivot selection local and leaves one broadcast per panel. " + T.MpiBreakEvenSentence + ".",
+    "pivot selection local and leaves one broadcast per panel. " + T.MpiConclusionSentence + ".",
     "Closing");
+  const stays = known(T.MpiStaysFasterSize);
+  const clear = stays && known(T.MpiClearSize) && T.MpiClearSize !== T.MpiStaysFasterSize;
+  const where = `with ${T.MpiMostProcesses} processes` +
+    (T.MpiNodes === "1" ? " on one machine" : ` on ${T.MpiNodes} machines`);
   const ch = 1.5;
   const rows = [
     [`${T.SeqSpeedupAtLargest}\u00d7 faster`,
@@ -761,9 +809,13 @@ section("Wrap-up");
       "Same results on all 1,771,561 pairs."],
     [`${T.LookupTableChained} ns, not ${T.LookupMapChained} ns`,
       "per step of the matrix product: an array indexed by the two operands instead of a hash map."],
-    [known(T.MpiStaysFasterSize) ? `MPI wins from N = ${T.MpiStaysFasterSize}` : "MPI: no break-even yet",
-      `with ${T.MpiMostProcesses} processes` + (T.MpiNodes === "1" ? " on one machine" : ` on ${T.MpiNodes} machines`) +
-      ". Columns make the pivot a local choice: one broadcast per panel."],
+    [!stays ? "MPI: no break-even yet"
+      : `MPI wins from N = ${clear ? T.MpiClearSize : T.MpiStaysFasterSize}`,
+      (clear
+        ? `in every run, ${where}. At N = ${T.MpiStaysFasterSize} it is ahead by ` +
+          `${T.MpiMarginPercent}%, in ${T.MpiMarginWins} runs. `
+        : `${where}. `) +
+      "Columns make the pivot a local choice: one broadcast per panel."],
   ];
   rows.forEach(([figure, label], index) => {
     const y = TOP + index * (ch + 0.2);

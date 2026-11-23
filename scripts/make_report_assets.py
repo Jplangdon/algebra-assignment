@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Turns the result files into the report's figures, tables and numbers.
 
-    python3 scripts/make_report_assets.py --sequential-label lemmen --mpi-label cluster
+    python3 scripts/make_report_assets.py --sequential-label <machine name> \\
+                                          --mpi-label <machine name>
 
 A label names the machine whose results go in the report. It can be left out
 only while one machine has results of that kind. With several, the script stops
@@ -246,10 +247,12 @@ def tex_escape(text):
 
 def plain(tex):
     """The text of a generated LaTeX snippet without its markup, for the slides."""
-    text = str(tex)
-    for old, new in ((r"Table~\ref{tab:blocks}", "The table"), (r"$\mu$s", "µs"),
+    text = re.sub(r"\\code\{([^}]*)\}", r"\1", str(tex))
+    for old, new in ((r"Table~\ref{tab:blocks}", "The table"),
+                     (r" (Table~\ref{tab:environments})", ""), (r"$\mu$s", "µs"),
                      (r"$\times$", "×"), (r"\%", "%"), (r"\,", ","), ("~", " "),
-                     (r"\&", "&"), (r"\_", "_"), (r"\textasciitilde{}", "~"), ("$", "")):
+                     (r"\&", "&"), (r"\_", "_"), (r"\textasciitilde{}", "~"), (r"\ ", " "),
+                     ("$", "")):
         text = text.replace(old, new)
     return re.sub(r"\s+", " ", text).strip()
 
@@ -325,7 +328,8 @@ PAPER = Style("paper", 3.45, 2.35, 7.5, REPORT_FIGURES, "pdf", 300)
 SLIDE = Style("slide", 8.6, 4.5, 15.0, SLIDE_FIGURES, "png", 200)
 
 
-def new_axes(style, height_factor=1.0):
+def use_style(style):
+    """Fonts and colours for every figure, so that none depends on a machine's defaults."""
     plt.rcParams.update({
         "font.family": "DejaVu Sans",
         "font.size": style.font,
@@ -339,6 +343,10 @@ def new_axes(style, height_factor=1.0):
         "text.color": INK,
         "pdf.fonttype": 42,
     })
+
+
+def new_axes(style, height_factor=1.0):
+    use_style(style)
     figure, axes = plt.subplots(figsize=(style.width, style.height * height_factor))
     figure.patch.set_facecolor(SURFACE)
     axes.set_facecolor(SURFACE)
@@ -361,6 +369,7 @@ def save(figure, style, name):
 
 def placeholder(style, name):
     """Stands in for a figure whose measurements do not exist yet, so the report compiles."""
+    use_style(style)
     figure, axes = plt.subplots(figsize=(style.width, style.height * 0.6))
     figure.patch.set_facecolor(SURFACE)
     axes.axis("off")
@@ -441,7 +450,8 @@ def horizontal_bars(axes, style, labels, values, colour, value_text):
 
 
 def figure_dependencies(style):
-    figure = plt.figure(figsize=(style.width, style.height * 0.95))
+    use_style(style)
+    figure = plt.figure(figsize=(style.width, style.height * 0.8))
     figure.patch.set_facecolor(SURFACE)
     axes = figure.add_axes([0, 0, 1, 1])
     axes.set_xlim(0, 10)
@@ -473,13 +483,16 @@ def figure_dependencies(style):
                                       zorder=2))
         edges[key] = (left, right, bottom, top)
 
-    def arrow(source, target):
+    def arrow(source, target, leave=0.0, arrive=0.0):
+        """An arrow between two boxes. `leave` and `arrive` move its ends along the edge of
+        the box, as a fraction of half the box's width, where several arrows share an edge."""
         sx, sy, _ = boxes[source]
         tx, ty, _ = boxes[target]
         s_left, s_right, s_bottom, _ = edges[source]
         t_left, t_right, _, t_top = edges[target]
         if sy > ty:
-            start, finish = (sx, s_bottom), (tx, t_top)
+            start = (sx + leave * (s_right - s_left) / 2, s_bottom)
+            finish = (tx + arrive * (t_right - t_left) / 2, t_top)
         elif sx > tx:
             start, finish = (s_left, sy), (t_right, ty)
         else:
@@ -488,25 +501,79 @@ def figure_dependencies(style):
                                        linewidth=0.8, color=INK_MUTED, shrinkA=1.5,
                                        shrinkB=1.5, zorder=1))
 
+    # One arrow for every dependency a repository declares in its cmake/Dependencies.cmake.
     arrow("assignment", "matrices")
     arrow("assignment", "fields")
     arrow("fields", "polynomials")
     arrow("fields", "rings")
     arrow("rings", "groups")
-    arrow("matrices", "core")
-    arrow("polynomials", "core")
+    arrow("rings", "core", leave=-0.5, arrive=0.7)
+    arrow("matrices", "core", arrive=-0.6)
+    arrow("polynomials", "core", arrive=0.05)
     arrow("groups", "core")
     return save(figure, style, "dependencies")
 
 
-def figure_profile(style, profile):
-    routines = [row for row in profile if row["grouping"] == "routine"]
-    if not routines:
+# The instruction profile is grouped by the source file of the executed line, because
+# that grouping does not depend on how a compiler names or inlines functions. Each entry
+# is (label in the figure, categories of results/profile_original.csv, part of the total).
+PROFILE_GROUPS = [
+    ("algebra-polynomials", ("polynomials",), "libraries"),
+    ("algebra-groups", ("groups",), "libraries"),
+    ("algebra-rings and -core", ("rings", "core"), "libraries"),
+    ("std::vector and other\nstandard library headers",
+     ("std::vector and other library headers",), "memory"),
+    ("memory allocator", ("heap allocator (libc)", "operator new and delete"), "memory"),
+    ("finite field class", ("finite fields",), "field class"),
+    ("matrix library\nand main.cpp", ("matrices", "assignment program"), "program"),
+    ("other", ("other",), "other"),
+]
+PROFILE_PARTS = ["libraries", "memory", "field class", "program", "other"]
+
+
+def profile_shares(profile):
+    """Percent of the executed instructions per figure label and per part of the total."""
+    source = {row["category"]: float(row["percent"]) for row in profile
+              if row["grouping"] == "source"}
+    if not source:
         return None
-    labels = [row["category"] for row in routines]
-    values = [float(row["percent"]) for row in routines]
-    figure, axes = new_axes(style, 0.82)
-    horizontal_bars(axes, style, labels, values, ORIGINAL, [f"{v:.1f}%" for v in values])
+    known = {category for _, categories, _ in PROFILE_GROUPS for category in categories}
+    unknown = sorted(set(source) - known)
+    if unknown:
+        sys.exit("results/profile_original.csv has source categories this script does not "
+                 f"know: {', '.join(unknown)}")
+    # The bars of one part stay together, the largest first.
+    bars = sorted(((label, sum(source.get(c, 0.0) for c in categories), part)
+                   for label, categories, part in PROFILE_GROUPS),
+                  key=lambda bar: (PROFILE_PARTS.index(bar[2]), -bar[1]))
+    bars = [(label, value) for label, value, _ in bars]
+    parts = defaultdict(float)
+    for _, categories, part in PROFILE_GROUPS:
+        parts[part] += sum(source.get(c, 0.0) for c in categories)
+    return {"bars": bars, "parts": dict(parts)}
+
+
+def percent_text(value):
+    """A share as text: 58.8, 2.7 or 0.25, so that small shares do not round to nothing.
+
+    The file gives two decimals. Halves round up, so that 37.75 reads 37.8 whether or not
+    the sum it came from is stored as slightly less.
+    """
+    hundredths = int(math.floor(value * 100 + 0.5))
+    if hundredths >= 100:
+        return f"{int(math.floor(hundredths / 10 + 0.5)) / 10:.1f}"
+    return f"{hundredths / 100:.2f}"
+
+
+def figure_profile(style, profile):
+    shares = profile_shares(profile)
+    if not shares:
+        return None
+    labels = [label for label, _ in shares["bars"]]
+    values = [value for _, value in shares["bars"]]
+    figure, axes = new_axes(style, 1.0)
+    horizontal_bars(axes, style, labels, values, ORIGINAL,
+                    [f"{percent_text(v)}%" for v in values])
     axes.set_xlim(0, max(values) * 1.22)
     axes.set_xlabel("Share of executed instructions (%)")
     return save(figure, style, "profile_original")
@@ -852,6 +919,29 @@ def reference_table(sequential):
                  r"$N$ & Library & Time & Memory & Time & Memory", rows)
 
 
+def mpi_table_note(summary):
+    """Where the table's sequential column and its ratios do not agree, and why.
+
+    The table gives one sequential time per size, pooled over all jobs, while each ratio
+    is taken inside its own job. Where the jobs' sequential times differ, a ratio is not
+    the quotient of the two times beside it.
+    """
+    by_size = defaultdict(list)
+    for (_, _, size), entry in summary.items():
+        if entry["sequential"]:
+            by_size[size].append(entry["sequential"])
+    spreads = {size: max(values) / min(values) - 1 for size, values in by_size.items()
+               if len(values) > 1}
+    uneven = sorted(size for size, spread in spreads.items() if spread > 0.10)
+    if not uneven:
+        return ""
+    worst = max(uneven, key=lambda size: spreads[size])
+    return ("Seq.\\ pools all jobs, and a ratio is taken inside one job. Up to "
+            f"$N = {uneven[-1]}$ the sequential time differs between jobs, by "
+            f"{spread_text(spreads[worst])} at $N = {worst}$, so there a ratio is not the "
+            "quotient of the two times beside it.")
+
+
 def mpi_table(summary, sequential):
     """Sequential and MPI time per size. With many process counts only ratios are shown."""
     block = main_block(summary)
@@ -891,7 +981,11 @@ def mpi_table(summary, sequential):
                 entry = series[processes].get(size)
                 cells += [time_cell(entry["mpi"]) if entry else "--", ratio_cell(entry)]
         rows.append(" & ".join(cells))
-    return table(columns, header, rows), process_counts
+    note = mpi_table_note(summary)
+    if note:
+        # As wide as the table's column, so that the note wraps under it.
+        note = r"\parbox{\columnwidth}{\raggedright " + note + "}"
+    return table(columns, header, rows, note=note or None), process_counts
 
 
 def block_widths(summary):
@@ -932,6 +1026,105 @@ def is_faster(entry):
     return entry["ratio"] is not None and entry["ratio"] > 1.0
 
 
+def library_checks(rows, label, in_table):
+    """What scripts/check_library.sh recorded on one machine, as text and as data.
+
+    Returns (LaTeX sentences, dictionary for the slides). Both are empty when the
+    machine has no rows, so that nothing is said that was not run there.
+    """
+    mine = [row for row in rows if row["label"] == label]
+    if not mine:
+        return "", None
+
+    def passed(row):
+        return int(row["failed"]) == 0 and int(row["passed"]) == int(row["tests"]) > 0
+
+    def compiler_name(row):
+        name = tidy_compiler(row["compiler"])
+        return name + (" with " + row["standard_library"] if row["standard_library"] else "")
+
+    sentences = []
+    summary = {"label": label, "library": [], "matrix": None, "wrong": None, "text": {}}
+    library = [row for row in mine if row["check"] == "library tests"]
+    where = f"On {tex_escape(label)}" + (r" (Table~\ref{tab:environments})" if in_table else "")
+    if library:
+        counts = sorted({int(row["tests"]) for row in library})
+        plain_builds = [row for row in library if row["build"] == "release" and passed(row)]
+        sanitized = [row for row in library if row["build"] != "release" and passed(row)]
+        failing = [row for row in library if not passed(row)]
+
+        def tex_name(row):
+            return tex_escape(compiler_name(row)).replace(" ", "~", 1)
+
+        compilers = sorted({tex_name(row) for row in plain_builds + sanitized})
+        if len(compilers) == 1:
+            # One compiler: name it once and list the builds.
+            builds = (["in an optimized build"] if plain_builds else []) + [
+                "under the " + row["build"] for row in sanitized]
+            sentences.append(f"{where} the {listing(counts)} tests pass with {compilers[0]}"
+                             + (": " + listing(builds) if len(builds) > 1 else
+                                " " + builds[0]) + ".")
+        elif compilers:
+            parts = []
+            if plain_builds:
+                parts.append("in an optimized build with "
+                             + listing([tex_name(row) for row in plain_builds]))
+            for compiler in sorted({tex_name(row) for row in sanitized}):
+                builds = [row["build"] for row in sanitized if tex_name(row) == compiler]
+                parts.append(f"with {compiler} under the " + " and under the ".join(builds))
+            sentences.append(f"{where} the {listing(counts)} tests pass "
+                             + (parts[0] if len(parts) == 1 else
+                                ", ".join(parts[:-1]) + ", and " + parts[-1]) + ".")
+        for row in failing:
+            sentences.append(f"With {tex_escape(compiler_name(row))} ({row['build']}) "
+                             f"{row['failed']} of the {row['tests']} tests FAIL on "
+                             f"{tex_escape(label)}.")
+        summary["library"] = [{"compiler": compiler_name(row), "build": row["build"],
+                               "tests": int(row["tests"]), "passed": int(row["passed"]),
+                               "failed": int(row["failed"])} for row in library]
+        summary["text"]["library"] = plain(" ".join(sentences))
+    matrix = [row for row in mine if row["check"] == "matrix tests"]
+    if matrix:
+        row = matrix[0]
+        if passed(row):
+            sentences.append(f"The {row['tests']} tests of \\code{{algebra-matrices}}, which "
+                             "build matrices over the field, pass there against the cached "
+                             "library.")
+        else:
+            sentences.append(f"Of the {row['tests']} tests of \\code{{algebra-matrices}}, "
+                             f"{row['failed']} FAIL when that library is built against the "
+                             "cached field.")
+        summary["matrix"] = {"tests": int(row["tests"]), "passed": int(row["passed"]),
+                             "failed": int(row["failed"])}
+        summary["text"]["matrix"] = plain(sentences[-1])
+    new = [row for row in mine if row["check"] == "wrong product: new tests"]
+    old = [row for row in mine if row["check"] == "wrong product: original tests"]
+    if new and old:
+        new, old = new[0], old[0]
+        caught = int(new["failed"])
+        if caught == 0:
+            outcome = (f"none of the {new['tests']} new tests fails, so the tests do NOT "
+                       "notice this error")
+        else:
+            outcome = (f"{caught} of the {new['tests']} new tests then "
+                       + ("fails" if caught == 1 else "fail"))
+            if int(old["failed"]) == 0:
+                outcome += f", while the {old['tests']} original tests still pass"
+            else:
+                outcome += (f", and so do {old['failed']} of the {old['tests']} original "
+                            "tests")
+        sentences.append("To check that the new tests can fail, "
+                         "\\code{scripts/check\\_library.sh} builds a copy of the library in "
+                         f"which {tex_escape(new['detail'])}: {outcome}.")
+        summary["wrong"] = {"detail": new["detail"], "new_tests": int(new["tests"]),
+                            "new_failed": caught, "original_tests": int(old["tests"]),
+                            "original_failed": int(old["failed"]),
+                            "failed_tests": [name for name in new["failed_tests"].split(";")
+                                             if name]}
+        summary["text"]["wrong"] = plain(sentences[-1])
+    return " ".join(sentences), summary
+
+
 def break_even(series):
     """First tested size at which MPI is faster, and the size from which it stays faster."""
     sizes = [s for s in sorted(series) if series[s]["ratio"] is not None]
@@ -944,6 +1137,21 @@ def break_even(series):
         else:
             break
     return first, stays
+
+
+def clear_size(series, stays):
+    """First size from which MPI won every individual run, at that size and at every larger one.
+
+    At the break-even size itself the margin can be inside the spread between runs, so
+    the two sizes are reported separately.
+    """
+    if stays is None:
+        return None
+    sizes = sorted(s for s in series if s >= stays and series[s]["ratio"] is not None)
+    for index, size in enumerate(sizes):
+        if all(series[s]["wins"] == series[s]["runs"] for s in sizes[index:]):
+            return size
+    return None
 
 
 class Numbers:
@@ -997,6 +1205,8 @@ def main():
 
     labels = {label for label in (sequential_label, mpi_label) if label}
     labels |= {row["label"] for row in sequential_rows}
+    checks = read_csv("library_checks.csv")
+    labels |= {row["label"] for row in checks}
     write(os.path.join(GENERATED, "table_environments.tex"),
           environments_table(environments, labels))
     write(os.path.join(GENERATED, "machines.tex"), machines_block(sequential_rows))
@@ -1014,16 +1224,14 @@ def main():
     numbers.add("SequentialMachine", tex_escape(sequential_label or "none"))
     numbers.add("MpiMachine", tex_escape(mpi_label or "none"))
 
-    # Instruction profile of the original program.
-    routine = {row["category"]: float(row["percent"]) for row in profile
-               if row["grouping"] == "routine"}
-    field_share = sum(value for key, value in routine.items() if key != "matrix loops"
-                      and key != "other")
-    numbers.add("ProfileReduction", f"{routine.get('polynomial reduction (divmod)', 0):.0f}")
-    numbers.add("ProfileHeap", f"{routine.get('heap allocation', 0):.0f}")
-    numbers.add("ProfileMultiply", f"{routine.get('polynomial multiplication', 0):.0f}")
-    numbers.add("ProfileMatrix", f"{routine.get('matrix loops', 0):.0f}")
-    numbers.add("ProfileField", f"{field_share:.0f}")
+    # Instruction profile of the original program, by the source the instructions are in.
+    shares = profile_shares(profile)
+    parts = shares["parts"] if shares else {}
+    numbers.add("ProfileLibraries", percent_text(parts.get("libraries", 0)))
+    numbers.add("ProfileMemory", percent_text(parts.get("memory", 0)))
+    numbers.add("ProfileFieldClass", percent_text(parts.get("field class", 0)))
+    numbers.add("ProfileProgram", percent_text(parts.get("program", 0)))
+    numbers.add("ProfileOther", percent_text(parts.get("other", 0)))
 
     # Cost per operation.
     cost = {(r["method"], r["operation"], r["pattern"]): float(r["ns_per_operation"])
@@ -1102,6 +1310,17 @@ def main():
             sentence = (f"at $N = {smallest}$ the cached program is only "
                         f"{ratio_text(speedups[smallest])} times faster ({times})")
         numbers.add("SeqSmallestSentence", sentence)
+        # Whether the speedup is still growing at the largest size measured with both.
+        if best == largest:
+            gain = "The speedup grows with the matrix over the whole range we measured"
+        elif speedups[largest] >= 0.95 * speedups[best]:
+            gain = (f"The speedup grows with the matrix up to $N = {best}$ and is about the "
+                    f"same at $N = {largest}$ ({ratio_text(speedups[best])} and "
+                    f"{ratio_text(speedups[largest])})")
+        else:
+            gain = (f"The speedup is largest at $N = {best}$, {ratio_text(speedups[best])}, and "
+                    f"lower at $N = {largest}$, {ratio_text(speedups[largest])}")
+        numbers.add("SeqGainSentence", gain)
         numbers.add("SeqOriginalMemoryAtLargest", memory_text(original[largest]["memory"]))
         numbers.add("SeqCachedMemoryAtLargest", memory_text(cached[largest]["memory"]))
         numbers.add("SeqMemoryRatioAtLargest",
@@ -1184,6 +1403,7 @@ def main():
         for name in ("SeqLargestBoth", "SeqOriginalAtLargest", "SeqCachedAtLargest",
                      "SeqSpeedupAtLargest", "SeqBestSpeedup", "SeqBestSpeedupSize",
                      "SeqSmallestSize", "SeqSpeedupAtSmallest", "SeqSmallestSentence",
+                     "SeqGainSentence",
                      "SeqOriginalMemoryAtLargest",
                      "SeqCachedMemoryAtLargest", "SeqMemoryRatioAtLargest",
                      "SeqMemoryCrossover", "SeqIdenticalSizes", "SeqIdenticalVerdict",
@@ -1256,9 +1476,19 @@ def main():
                         f"{largest_entry['broadcast_bytes'] / 1e6:.1f}")
             numbers.add("MpiLargestDistributedMegabytes",
                         f"{largest_entry['distributed_bytes'] / 1e6:.1f}")
+            # The assignment asks for the smallest size at which MPI is faster. The median
+            # ratio answers that, but close to 1 it says little, so three sizes are reported:
+            # the last size at which MPI was slower, the first at which its median was
+            # faster for good, and the first from which it won every individual run.
+            tested = sorted(ratios)
+            lower = max((s for s in tested if stays is not None and s < stays), default=None)
+            clear = clear_size(parallel[most], stays)
             if first is None:
                 sentence = (f"With {most} processes MPI was not faster than the sequential "
                             "program at any tested size")
+            elif stays == first and lower is None:
+                sentence = (f"With {most} processes MPI was faster than the sequential program "
+                            "at every tested size")
             elif stays == first:
                 sentence = (f"With {most} processes the smallest tested size at which MPI was "
                             f"faster is $N={first}$, and it stayed faster at every larger size")
@@ -1272,12 +1502,37 @@ def main():
             numbers.add("MpiBreakEvenSentence", sentence)
             numbers.add("MpiBreakEvenSize", str(first) if first else "none")
             numbers.add("MpiStaysFasterSize", str(stays) if stays else "none")
+            numbers.add("MpiLowerSize", str(lower) if lower else "none")
+            numbers.add("MpiClearSize", str(clear) if clear else "none")
+            numbers.add("MpiMarginPercent",
+                        f"{100 * (ratios[stays] - 1):.0f}" if stays else "n/a")
+            numbers.add("MpiMarginWins",
+                        f"{parallel[most][stays]['wins']} of {parallel[most][stays]['runs']}"
+                        if stays else "n/a")
             # How consistently MPI won the individual runs from the break-even size on.
             wins = ""
             if stays is not None:
                 above = [parallel[most][s] for s in sorted(parallel[most]) if s >= stays]
-                if all(e["wins"] == e["runs"] for e in above):
+                entry = parallel[most][stays]
+                if clear == stays:
                     wins = "From that size on, MPI also won every individual run."
+                    if lower is not None and stays == first:
+                        wins += (f" At $N={lower}$ the ratio is {ratios[lower]:.2f}, so the "
+                                 f"break-even lies between $N={lower}$ and $N={stays}$.")
+                elif clear is not None:
+                    wins = (f"The margin at $N={stays}$ is small, though: the ratio is "
+                            f"{ratios[stays]:.2f}, one determinant takes "
+                            f"{tex_duration(mpi_sequential[stays])}, and MPI won "
+                            f"{entry['wins']} of the {entry['runs']} runs.")
+                    if lower is not None and stays == first:
+                        wins += (f" At $N={lower}$ MPI was slower, with a ratio of "
+                                 f"{ratios[lower]:.2f}, and from $N={clear}$ on, where the ratio "
+                                 f"is {ratios[clear]:.2f}, it won every run. The break-even "
+                                 f"therefore lies between $N={lower}$ and $N={clear}$, and our "
+                                 "runs do not place it more exactly.")
+                    else:
+                        wins += (f" From $N={clear}$ on, where the ratio is "
+                                 f"{ratios[clear]:.2f}, it won every run.")
                 else:
                     worst = min(above, key=lambda e: e["wins"] / e["runs"])
                     wins = (f"From that size on, MPI won at least {worst['wins']} of the "
@@ -1288,6 +1543,21 @@ def main():
                              f"{tex_duration(mpi_sequential[below[-1]])} or less, and the "
                              "two programs trade places from run to run.")
             numbers.add("MpiWinsSentence", wins)
+            # The same finding in one sentence, for the conclusion.
+            largest_size = max(parallel[most])
+            at_largest = (f"at $N = {largest_size}$ it is {largest_entry['ratio']:.2f} times "
+                          "as fast")
+            if first is None or stays is None:
+                closing = sentence
+            elif clear is not None and clear != stays:
+                closing = (f"With {most} processes the smallest tested size at which MPI was "
+                           f"faster is $N = {stays}$, by a margin of "
+                           f"{100 * (ratios[stays] - 1):.0f}\\% that is within the spread "
+                           f"between runs; from $N = {clear}$ upward it won every run, and "
+                           + at_largest)
+            else:
+                closing = sentence + ", and " + at_largest
+            numbers.add("MpiConclusionSentence", closing)
             if 1 in series:
                 same = [s for s in series[1] if s in parallel[most]]
                 top = max(same)
@@ -1317,9 +1587,13 @@ def main():
                          "MpiLargestRatio",
                          "MpiLargestPanels", "MpiLargestBroadcastMegabytes",
                          "MpiLargestDistributedMegabytes", "MpiBreakEvenSize",
-                         "MpiStaysFasterSize", "MpiParallelGain", "MpiOneProcessRatio"):
+                         "MpiStaysFasterSize", "MpiLowerSize", "MpiClearSize",
+                         "MpiMarginPercent", "MpiMarginWins", "MpiParallelGain",
+                         "MpiOneProcessRatio"):
                 numbers.add(name, "n/a")
             numbers.add("MpiBreakEvenSentence",
+                        "Only single-process MPI runs have been recorded so far")
+            numbers.add("MpiConclusionSentence",
                         "Only single-process MPI runs have been recorded so far")
             numbers.add("MpiWinsSentence", "")
             numbers.add("MpiOneProcessSentence", "")
@@ -1329,12 +1603,14 @@ def main():
                      "MpiLargestSequential", "MpiLargestTime", "MpiLargestRatio",
                      "MpiLargestPanels",
                      "MpiLargestBroadcastMegabytes", "MpiLargestDistributedMegabytes",
-                     "MpiBreakEvenSize", "MpiStaysFasterSize", "MpiParallelGain",
+                     "MpiBreakEvenSize", "MpiStaysFasterSize", "MpiLowerSize", "MpiClearSize",
+                     "MpiMarginPercent", "MpiMarginWins", "MpiParallelGain",
                      "MpiOneProcessRatio"):
             numbers.add(name, "n/a")
         numbers.add("MpiNodesSentence", "No MPI measurements have been recorded yet")
         numbers.add("MpiNodesLimitation", "No MPI measurements have been recorded yet.")
         numbers.add("MpiBreakEvenSentence", "No MPI measurements have been recorded yet")
+        numbers.add("MpiConclusionSentence", "No MPI measurements have been recorded yet")
         numbers.add("MpiWinsSentence", "")
         numbers.add("MpiOneProcessSentence", "")
     numbers.add("MpiBlockProcesses", str(block_processes) if block_processes else "n/a")
@@ -1364,15 +1640,26 @@ def main():
         series = mpi_series(mpi, block)
         most = max(series)
         first, stays = break_even(series[most])
+        clear = clear_size(series[most], stays)
         nodes = max(entry["nodes"] for entry in mpi.values())
         place = (f"across {nodes} machines" if nodes > 1 else
                  "on a single machine, where messages do not cross a network")
         if first is None:
             abstract = (f"With {most} processes {place}, the MPI program was not faster than "
                         "the cached sequential program at any size we tested.")
+        elif stays is None:
+            abstract = (f"With {most} processes {place}, the MPI program was first faster than "
+                        f"the cached sequential program at $N = {first}$, but not at the "
+                        "largest size we tested.")
+        elif clear is not None and clear != stays:
+            margin = 100 * (series[most][stays]["ratio"] - 1)
+            abstract = (f"With {most} processes {place}, the smallest tested size at which the "
+                        "MPI program is faster than the cached sequential program is "
+                        f"$N = {stays}$, by {margin:.0f}\\% in the median; from "
+                        f"$N = {clear}$ upward it is faster in every run.")
         else:
             abstract = (f"With {most} processes {place}, the MPI program is faster than the "
-                        f"cached sequential program from $N = {stays or first}$ upward.")
+                        f"cached sequential program from $N = {stays}$ upward.")
     else:
         abstract = "The MPI program has not been timed on more than one process yet."
     numbers.add("MpiAbstractSentence", abstract)
@@ -1410,6 +1697,19 @@ def main():
     else:
         numbers.add("MpiTestCount", "many")
         numbers.add("MpiTestVerdict", "which have not been recorded for this report yet")
+
+    # The library checks, for every machine they were recorded on. The machine of the
+    # before-and-after measurements comes first.
+    described_labels = {row["label"] for row in environments}
+    check_labels = sorted({row["label"] for row in checks},
+                          key=lambda label: (label != sequential_label, label))
+    check_texts, check_data = [], []
+    for label in check_labels:
+        sentences, summary = library_checks(checks, label, label in described_labels)
+        if sentences:
+            check_texts.append(sentences)
+            check_data.append(summary)
+    numbers.add("LibraryChecksParagraph", " ".join(check_texts))
 
     # Panel widths.
     if block_processes:
@@ -1494,8 +1794,8 @@ def main():
             "mpi_description": described(mpi_label),
         },
         "profile": {
-            "categories": [row["category"] for row in profile if row["grouping"] == "routine"],
-            "percent": [float(row["percent"]) for row in profile if row["grouping"] == "routine"],
+            "categories": [label.replace("\n", " ") for label, _ in (shares or {"bars": []})["bars"]],
+            "percent": [round(value, 2) for _, value in (shares or {"bars": []})["bars"]],
         },
         "lookup": {
             "groups": ["add", "multiply", "multiply then add (chained)"],
@@ -1523,6 +1823,7 @@ def main():
             "answered": [rates[s][1] for s in sorted(rates)],
         },
         "mpi": {"block": block, "sizes": [], "sequential_seconds": [], "series": []},
+        "checks": check_data,
         "text": {name: plain(value) for name, value in numbers.values.items()},
     }
     if block is not None:

@@ -6,6 +6,9 @@ Subcommands
   sequential  run the assignment program once, measure it, add a row to a CSV
   has         exit with status 0 if a CSV already has a matching row
   merge       add the rows of a result file from another machine to a local one
+  check-row   turn the result of one ctest run into rows of a check file
+  check-store put the rows of one run of scripts/check_library.sh into results/
+  wrong-product  make one stored product wrong in a copy of the cached library
 
 Only the Python standard library is used.
 """
@@ -17,6 +20,7 @@ import platform
 import re
 import subprocess
 import sys
+import xml.etree.ElementTree
 
 SEQUENTIAL_COLUMNS = [
     "label", "implementation", "size", "repeat", "wall_seconds", "user_seconds",
@@ -29,6 +33,21 @@ MACHINE_COLUMNS = [
     "label", "cpu", "logical_cpus", "memory_gib", "system", "kernel", "compiler", "mpi",
     "recorded",
 ]
+
+CHECK_COLUMNS = [
+    "label", "check", "compiler", "standard_library", "build", "tests", "passed", "failed",
+    "failed_tests", "detail", "library_commit", "recorded",
+]
+
+# The line of the cached library that stores a product on a cache miss, and what the
+# wrong-product check puts in its place: for one ordered pair the sum is stored instead.
+PRODUCT_LINE = ("        return store(products_[std::size_t{a} * order + b], "
+                "elements[a].multiply(elements[b]));\n")
+WRONG_PRODUCT = (
+    "        if (a == %(a)d && b == %(b)d) {   // deliberately wrong: scripts/check_library.sh\n"
+    "            return store(products_[std::size_t{a} * order + b], "
+    "elements[a].add(elements[b]));\n"
+    "        }\n")
 
 
 def first_line(command):
@@ -264,6 +283,105 @@ def command_merge(arguments):
     return 0
 
 
+def test_results(junit):
+    """[(test name, passed)] from the file `ctest --output-junit` writes."""
+    results = []
+    for case in xml.etree.ElementTree.parse(junit).getroot().iter("testcase"):
+        passed = case.get("status") == "run" and case.find("failure") is None
+        results.append((case.get("name", ""), passed))
+    return results
+
+
+def command_check_row(arguments):
+    """Adds what one ctest run showed to a file of check rows.
+
+    With --split-at the tests are counted in two groups, those whose name contains the
+    given text ("new tests") and the others ("original tests"), one row for each.
+    """
+    results = test_results(arguments.junit)
+    if not results:
+        print(f"{arguments.junit} lists no tests", file=sys.stderr)
+        return 1
+    if arguments.split_at:
+        groups = [(f"{arguments.check}: new tests",
+                   [r for r in results if arguments.split_at in r[0]]),
+                  (f"{arguments.check}: original tests",
+                   [r for r in results if arguments.split_at not in r[0]])]
+    else:
+        groups = [(arguments.check, results)]
+    for check, group in groups:
+        failed = [name for name, passed in group if not passed]
+        # Test names start with the library's prefix, which says nothing here.
+        short = [name.split(".", 1)[1] if "." in name else name for name in failed]
+        append_row(arguments.csv, CHECK_COLUMNS, {
+            "label": arguments.label,
+            "check": check,
+            "compiler": arguments.compiler,
+            "standard_library": arguments.standard_library,
+            "build": arguments.build,
+            "tests": len(group),
+            "passed": len(group) - len(failed),
+            "failed": len(failed),
+            "failed_tests": ";".join(short),
+            "detail": arguments.detail,
+            "library_commit": arguments.commit,
+            "recorded": datetime.date.today().isoformat(),
+        })
+        print(f"  {check}: {len(group) - len(failed)} of {len(group)} pass"
+              + (f"; failing: {', '.join(short)}" if failed else ""))
+    return 0
+
+
+def command_check_store(arguments):
+    """Puts the rows of one run into the results file, in place of the label's older rows.
+
+    A complete run replaces everything the label had. A partial run (--partial) replaces
+    only the rows for the same check, compiler, standard library and build.
+    """
+    fresh = read_rows(arguments.rows)
+    if not fresh:
+        print("no check produced a result, so the results file is left as it is",
+              file=sys.stderr)
+        return 1
+
+    def key(row):
+        return (row["check"], row["compiler"], row["standard_library"], row["build"])
+
+    replaced = {key(row) for row in fresh}
+    kept = [row for row in read_rows(arguments.csv)
+            if row["label"] != arguments.label
+            or (arguments.partial and key(row) not in replaced)]
+    write_rows(arguments.csv, CHECK_COLUMNS, kept + fresh)
+    print(f"{len(fresh)} rows for {arguments.label} are now in {arguments.csv}")
+    # A failing test in a normal build is a problem. In the wrong-product check a failing
+    # new test is the point, and none failing is the problem.
+    status = 0
+    for row in fresh:
+        wrong = row["check"].startswith("wrong product")
+        if not wrong and row["failed"] != "0":
+            print(f"PROBLEM: {row['failed']} of {row['tests']} tests fail: {row['check']}, "
+                  f"{row['compiler']}, {row['build']}")
+            status = 1
+        if row["check"] == "wrong product: new tests" and row["failed"] == "0":
+            print("PROBLEM: no new test noticed the wrong product")
+            status = 1
+    return status
+
+
+def command_wrong_product(arguments):
+    """Edits a copy of the cached library so that one product is stored wrongly."""
+    with open(arguments.header, encoding="utf-8") as handle:
+        source = handle.read()
+    if source.count(PRODUCT_LINE) != 1:
+        print(f"{arguments.header} does not store products the way this check expects",
+              file=sys.stderr)
+        return 1
+    wrong = WRONG_PRODUCT % {"a": arguments.a, "b": arguments.b}
+    with open(arguments.header, "w", encoding="utf-8") as handle:
+        handle.write(source.replace(PRODUCT_LINE, wrong + PRODUCT_LINE))
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -295,6 +413,32 @@ def main():
     merge.add_argument("source", help="result file copied from another machine")
     merge.add_argument("target", help="local result file to add its rows to")
     merge.set_defaults(run=command_merge)
+
+    check_row = commands.add_parser("check-row")
+    check_row.add_argument("--label", required=True)
+    check_row.add_argument("--csv", required=True)
+    check_row.add_argument("--junit", required=True)
+    check_row.add_argument("--check", required=True)
+    check_row.add_argument("--compiler", required=True)
+    check_row.add_argument("--standard-library", default="")
+    check_row.add_argument("--build", required=True)
+    check_row.add_argument("--detail", default="")
+    check_row.add_argument("--commit", default="")
+    check_row.add_argument("--split-at", default="")
+    check_row.set_defaults(run=command_check_row)
+
+    check_store = commands.add_parser("check-store")
+    check_store.add_argument("--label", required=True)
+    check_store.add_argument("--rows", required=True)
+    check_store.add_argument("--csv", required=True)
+    check_store.add_argument("--partial", action="store_true")
+    check_store.set_defaults(run=command_check_store)
+
+    wrong_product = commands.add_parser("wrong-product")
+    wrong_product.add_argument("header")
+    wrong_product.add_argument("--a", type=int, required=True)
+    wrong_product.add_argument("--b", type=int, required=True)
+    wrong_product.set_defaults(run=command_wrong_product)
 
     arguments = parser.parse_args()
     return arguments.run(arguments)
